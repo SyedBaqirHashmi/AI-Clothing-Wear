@@ -8,11 +8,11 @@
 | D-2 | Photo Mode at launch? | Yes, as Phase 5, after Live Mode is solid | Proposed |
 | D-3 | Photo Mode model source | Commercial API first (licence-safe); evaluate self-hosting later | **Needs your decision** (cost vs. control) |
 | D-4 | First store platform | Shopify first, then WooCommerce (confirm with pilot brands) | **Needs your input** |
-| D-5 | First garment categories | Women's 3-piece lawn suits + men's kurta/shalwar kameez | **Needs your input** |
+| D-5 | First garment categories | Both: women's 3-piece lawn suits (kameez + shalwar/trouser + dupatta) and men's kurta / shalwar kameez | **Decided** |
 | D-6 | Target device floor | Tier C = 3–4 GB RAM Android phones from 2020 onwards | Proposed |
 | D-7 | Brand / product name + domain | — | **Needs your input** |
 | D-8 | Business model | Monthly PKR subscription + Photo Mode credits | Proposed, validate in Phase 0 |
-| D-9 | Team | Solo + Claude, or add a designer and a backend developer | **Needs your input** |
+| D-9 | Team | Founder + Claude; add a designer or backend developer only when needed | **Decided** |
 
 ## 6.2 Architecture decision records (ADRs)
 
