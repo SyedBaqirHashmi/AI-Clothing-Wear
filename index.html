@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Virtual Try-On</title>
+<style>
+  :root { --bg:#111; --fg:#eee; --accent:#c9a227; --card:#1c1c1c; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font-family:system-ui, sans-serif; }
+  header { padding:12px 16px; display:flex; justify-content:space-between; align-items:center; }
+  h1 { font-size:18px; margin:0; }
+  #stage { position:relative; max-width:900px; margin:0 auto; }
+  canvas { width:100%; display:block; background:#000; border-radius:8px; }
+  #status { position:absolute; top:10px; left:10px; background:#000a; padding:6px 10px; border-radius:6px; font-size:13px; }
+  #shelf { display:flex; gap:10px; overflow-x:auto; padding:12px 16px; max-width:900px; margin:0 auto; }
+  .item { flex:0 0 90px; background:var(--card); border:2px solid transparent; border-radius:8px; padding:6px; cursor:pointer; text-align:center; font-size:12px; }
+  .item img { width:100%; height:80px; object-fit:contain; }
+  .item.active { border-color:var(--accent); }
+  .controls { display:flex; flex-wrap:wrap; gap:12px; padding:0 16px 16px; max-width:900px; margin:0 auto; font-size:13px; }
+  .controls label { display:flex; align-items:center; gap:6px; }
+  button { background:var(--accent); color:#000; border:0; padding:8px 14px; border-radius:6px; font-weight:600; cursor:pointer; }
+  video { display:none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Virtual Try-On</h1>
+  <button id="startBtn">Start camera</button>
+</header>
+
+<div id="stage">
+  <canvas id="canvas" width="1280" height="720"></canvas>
+  <div id="status">Press "Start camera". Stand 1.5–2 m back so shoulders and hips are visible.</div>
+</div>
+
+<div id="shelf"></div>
+
+<div class="controls">
+  <label>Width <input id="wScale" type="range" min="1.2" max="3" step="0.05" value="2"></label>
+  <label>Length <input id="lScale" type="range" min="0.8" max="3" step="0.05" value="1"></label>
+  <label>Upload garment (transparent PNG) <input id="upload" type="file" accept="image/*"></label>
+  <label><input id="showPts" type="checkbox"> Show body points</label>
+  <button id="snapBtn">Snapshot</button>
+</div>
+
+<video id="video" playsinline muted></video>
+<script type="module" src="app.js"></script>
+</body>
+</html>
