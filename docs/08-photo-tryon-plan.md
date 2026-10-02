@@ -55,7 +55,7 @@ Results to R2 (auto-delete after 24 h) → web page / WhatsApp reply
 | Users, credits, jobs | Cloudflare D1 (SQLite) | 5 GB |
 | Errors / analytics | Sentry, PostHog | free tiers |
 | WhatsApp | Meta WhatsApp Cloud API (direct, no BSP) | replies inside the 24 h window to a user's message are free service messages |
-| GPU | RunPod serverless | pay per second; 0 workers when idle |
+| GPU | Modal (free monthly credit), RunPod reserve | pay per second; 0 workers when idle |
 
 ## GPU cost estimates (RunPod serverless, flex workers; verify on runpod.io/pricing)
 | Request | GPU | Time | Cost/request |
@@ -67,17 +67,36 @@ Results to R2 (auto-delete after 24 h) → web page / WhatsApp reply
 
 **Model storage:** bake the weights into the Docker image (free on Docker Hub/GHCR) or use a RunPod network volume (~$0.07/GB/month, ~60 GB ≈ $4/month).
 
-**What $10 buys:** ~2,000 try-ons, or ~250 try-ons + 360° sets.
+**What $5 buys:** ~1,000 try-ons, or ~125 try-ons + 360° sets.
 
 **Free beta limits:**
 - 3 try-ons and one 360° set per user per day;
 - small watermark;
 - a global daily GPU cap so the budget can't be exhausted.
 
-## Phase 0: model bake-off (first, ~$5–15 of RunPod credit)
-1. **Hardware:** one RunPod *pod* (on-demand, stopped when idle). Start with a 4090 for FASHN and Real-ESRGAN, then an L40S/A6000 48 GB for Qwen-Image-Edit.
-2. **Test set** (git-ignored, internal only): 30 garments from `datasets/`, covering kurta, 3-piece, lawn fabric, men's shalwar kameez and long kameez, on 6 person photos (CC-licensed, different body types and poses).
-3. **Run each model on the same cases. Score:**
+## Budget: $5 (Oct 2026), so free GPUs first
+| Use | Where | Free allowance | Cost |
+|---|---|---|---|
+| Phase 0 bake-off, development, batch tests | **Kaggle notebooks** (T4 16 GB ×2 or P100), driven from here with the Kaggle API (`kaggle kernels push` / `output`) | ~30 GPU h/week | $0 |
+| Backup for quick experiments | Google Colab free (T4) | a few h/day, not guaranteed | $0 |
+| Live service (web + WhatsApp) | **Modal** serverless GPU (starter plan's monthly free credit, check current terms) | ~$30/month of credit ≈ several thousand try-ons | $0 |
+| Reserve: launch day, peaks, 48 GB jobs | RunPod serverless | your $5 ≈ 1,000 try-ons | only if needed |
+
+**Rules for the $5:**
+- Spend none of it on experiments.
+- Hard spending cap and a daily request cap in the API.
+- 360° sets are rationed: 1 per user per day, 6 views instead of 8 until funded.
+
+**On a 16 GB T4:**
+- FASHN VTON (~8 GB) and Real-ESRGAN fit.
+- Qwen-Image-Edit (20B) needs a 4-bit build with offloading. That's slower but fine for testing, and fine for production on Modal's larger GPUs.
+
+## Phase 0: model bake-off (free, on Kaggle)
+1. **Test set** (private Kaggle dataset, internal only, never public): 30 garments from `datasets/`, covering kurta, 3-piece, lawn fabric, men's shalwar kameez and long kameez, on 6 person photos (CC-licensed, different body types and poses).
+2. **Kaggle notebooks**, pushed and collected automatically, one per model:
+   - FASHN VTON 1.5 + Real-ESRGAN;
+   - Qwen-Image-Edit-2511 (4-bit) for try-on, unstitched → stitched, and Multiple-Angles views.
+3. **Score:**
    - garment fidelity (print, embroidery, length);
    - identity kept;
    - realism;
@@ -86,10 +105,10 @@ Results to R2 (auto-delete after 24 h) → web page / WhatsApp reply
 4. **Deliverable:**
    - `docs/qa/phase0-bakeoff.md` with contact sheets;
    - the chosen model per step;
-   - measured cost per request (replacing the estimates above).
+   - measured time per request, used to replace the cost estimates above.
 
 ## Phase 1: MVP (after Phase 0)
-- RunPod serverless worker (`gpu/`: Dockerfile + `handler.py`).
+- GPU worker (`gpu/`: one `handler.py`, deployable to Modal (primary, free credit) and RunPod (reserve) from the same code).
 - Cloudflare Worker API (`workers/api/`).
 - Web app (`apps/web/`): Urdu/English; upload or camera; result with download and share; 360° viewer.
 - WhatsApp bot: send a photo of yourself, then the cloth → result, with "360" as a reply option.
