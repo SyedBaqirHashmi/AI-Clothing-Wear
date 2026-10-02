@@ -37,6 +37,7 @@ interface ReportRow {
   layers: { slot: string; coverage: string; kb: number; thumb: string }[];
   /** Accuracy measurements (when the photo has labels). */
   metrics: { personFound?: boolean; hemFound?: boolean; hemError?: number };
+  skipped?: boolean;
 }
 
 const logEl = document.getElementById('log')!;
@@ -127,8 +128,18 @@ async function importProduct(e: Entry): Promise<{ product: object | null; row: R
   const kind: PhotoKind = e.meta.kind ?? 'model';
   const photo = await loadPhoto(await fetchImage(e.store, e.product, main));
   const c = await cutOut(photo, getVision, { kind, fillGaps: true, accessories: false });
-  if (kind === 'model' && !c.personFound) notes.push('No person detected: joints are a template, check this product in the Studio.');
+  if (kind === 'model' && !c.personFound) {
+    // Fabric swatches, flat product shots, close-ups: not usable as a worn-garment photo.
+    notes.push('Skipped: no person in the photo (fabric swatch or product-only shot). Use kind "plain" for flat-lays.');
+    row.skipped = true;
+    return { product: null, row };
+  }
   const cov = coverageOf(c.alpha);
+  if (cov < 0.01) {
+    notes.push(`Skipped: almost no clothing found (${(cov * 100).toFixed(1)}% of the photo).`);
+    row.skipped = true;
+    return { product: null, row };
+  }
   if (cov < 0.03) notes.push(`Very little clothing found (${(cov * 100).toFixed(1)}% of the photo).`);
 
   row.metrics.personFound = c.personFound;
@@ -208,8 +219,8 @@ function reportHtml(rows: ReportRow[]): string {
   const esc = (s: string) => s.replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]!);
   const cards = rows
     .map(
-      (r) => `<section class="${r.ok ? (r.notes.length ? 'warn' : 'ok') : 'bad'}">
-  <h2>${esc(r.store)} / ${esc(r.product)} <small>${r.ok ? (r.notes.length ? 'check' : 'ready') : 'failed'}</small></h2>
+      (r) => `<section class="${r.ok ? (r.notes.length ? 'warn' : 'ok') : r.skipped ? 'skip' : 'bad'}">
+  <h2>${esc(r.store)} / ${esc(r.product)} <small>${r.ok ? (r.notes.length ? 'check' : 'ready') : r.skipped ? 'skipped' : 'failed'}</small></h2>
   <div class="row">${r.preview ? `<img src="${r.preview}" alt="cut-out">` : ''}${r.layers
     .map((l) => `<figure><img src="${l.thumb}" alt=""><figcaption>${l.slot} · ${l.coverage} · ${l.kb} KB</figcaption></figure>`)
     .join('')}</div>
@@ -219,24 +230,29 @@ function reportHtml(rows: ReportRow[]): string {
     )
     .join('\n');
   const ready = rows.filter((r) => r.ok && !r.notes.length).length;
-  const m = metrics(rows);
+  const m = metrics(rows.filter((r) => !r.skipped));
   const summary = `<p>Person detected: <b>${m.personFoundPct}%</b> · kameez hem found: <b>${m.hemFoundPct}%</b>${
     m.labelledHems ? ` · hem accuracy on ${m.labelledHems} labelled photos: median error <b>${m.hemMedianErrorPct}%</b> of photo height, <b>${m.hemWithin5Pct}%</b> within 5%` : ''
   }</p>`;
   return `<!doctype html><html><head><meta charset="utf-8"><title>Import report</title><style>
 body{margin:0;padding:24px;font:14px system-ui,sans-serif;background:#121214;color:#f1efe9}
 section{border:1px solid #2c2c33;border-left:6px solid #3c9;border-radius:10px;padding:12px 16px;margin:0 0 16px;background:#1b1b1f}
-section.warn{border-left-color:#d9b25a}section.bad{border-left-color:#e66}
+section.warn{border-left-color:#d9b25a}section.bad{border-left-color:#e66}section.skip{border-left-color:#666;opacity:.7}
 h2{font-size:16px;margin:0 0 10px}small{color:#9d9a92;font-weight:400;margin-left:8px}
 .row{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}.row>img{height:360px;border-radius:6px}
 figure{margin:0;text-align:center}figure img{height:160px;background:repeating-conic-gradient(#3a3a40 0 25%,#2c2c31 0 50%) 0 0/12px 12px;border-radius:6px}
 figcaption{font-size:12px;color:#9d9a92}a{color:#d9b25a}li{color:#e8c77d}
-</style></head><body><h1>Import report</h1><p>${rows.length} products · ${ready} ready · ${rows.filter((r) => r.ok && r.notes.length).length} to check · ${rows.filter((r) => !r.ok).length} failed</p>${summary}${cards}</body></html>`;
+</style></head><body><h1>Import report</h1><p>${rows.length} products · ${ready} ready · ${rows.filter((r) => r.ok && r.notes.length).length} to check · ${rows.filter((r) => r.skipped).length} skipped · ${rows.filter((r) => !r.ok && !r.skipped).length} failed</p>${summary}${cards}</body></html>`;
 }
 
 async function run(): Promise<{ products: number; ready: number; failed: number }> {
   logEl.textContent = '';
-  const entries = (await (await fetch('/__datasets/manifest.json')).json()) as Entry[];
+  const q = new URLSearchParams(location.search);
+  const onlyStore = q.get('store');
+  const limit = Number(q.get('limit')) || Infinity;
+  const entries = ((await (await fetch('/__datasets/manifest.json')).json()) as Entry[])
+    .filter((e) => !onlyStore || e.store === onlyStore)
+    .slice(0, limit);
   if (!entries.length) {
     log('No products found. Put photos in datasets/<store>/<product>/ (see datasets/README.md).');
     return { products: 0, ready: 0, failed: 0 };
@@ -264,8 +280,9 @@ async function run(): Promise<{ products: number; ready: number; failed: number 
   const summary = {
     products: rows.length,
     ready: rows.filter((r) => r.ok && !r.notes.length).length,
-    failed: rows.filter((r) => !r.ok).length,
-    accuracy: metrics(rows),
+    skipped: rows.filter((r) => r.skipped).length,
+    failed: rows.filter((r) => !r.ok && !r.skipped).length,
+    accuracy: metrics(rows.filter((r) => !r.skipped)),
   };
   log(`Done: ${JSON.stringify(summary)}. Report: datasets/report.html`);
   return summary;

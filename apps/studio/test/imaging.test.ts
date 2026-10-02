@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { closeHoles, coverage, guidedFilter, inpaint, maskBounds, removePlainBackground, splitMask, type Rgba } from '../src/imaging.ts';
+import { closeHoles, coverage, fillEnclosedHoles, guidedFilter, inpaint, keepMainRegions, maskBounds, removePlainBackground, splitMask, type Rgba } from '../src/imaging.ts';
 
 /** A white 100×120 "photo" with a coloured garment rectangle (and a white gap inside it). */
 function photo(): Rgba {
@@ -71,8 +71,24 @@ describe('closeHoles + inpaint', () => {
     const { alpha: closed, added } = closeHoles(alpha, w, img.height, 3);
     expect(closed[31 * w + 31]).toBe(1);
     expect(added[31 * w + 31]).toBe(1);
-    inpaint(img, added);
+    // Only garment pixels may lend colour (not the white background next to the garment).
+    const fabric = new Uint8Array(alpha.length);
+    for (let i = 0; i < fabric.length; i++) fabric[i] = alpha[i] > 0.5 ? 1 : 0;
+    inpaint(img, added, fabric);
     expect(Math.abs(img.data[(31 * w + 31) * 4 + 1] - 140)).toBeLessThan(20);
+  });
+
+  it('never fills a hole at the garment edge with background colour', () => {
+    const img = photo();
+    const w = img.width;
+    const alpha = removePlainBackground(img);
+    // Notch at the left edge of the garment (x 20..24), as a hand would leave.
+    for (let y = 40; y < 46; y++) for (let x = 20; x < 25; x++) alpha[y * w + x] = 0;
+    const { added } = closeHoles(alpha, w, img.height, 4);
+    const fabric = new Uint8Array(alpha.length);
+    for (let i = 0; i < fabric.length; i++) fabric[i] = alpha[i] > 0.5 ? 1 : 0;
+    inpaint(img, added, fabric);
+    for (let i = 0; i < added.length; i++) if (added[i]) expect(img.data[i * 4 + 1]).toBeLessThan(200); // not white
   });
 });
 
@@ -86,5 +102,33 @@ describe('splitMask and maskBounds', () => {
     expect(box.y + box.h).toBeLessThanOrEqual(61);
     expect(box.x).toBe(20);
     expect(box.w).toBe(60);
+  });
+});
+
+describe('keepMainRegions', () => {
+  it('drops small separate fragments and keeps the garment', () => {
+    const w = 60;
+    const h = 60;
+    const a = new Float32Array(w * h);
+    for (let y = 10; y < 50; y++) for (let x = 10; x < 40; x++) a[y * w + x] = 1; // garment
+    for (let y = 5; y < 8; y++) for (let x = 50; x < 53; x++) a[y * w + x] = 1; // speck
+    const out = keepMainRegions(a, w, h);
+    expect(out[30 * w + 20]).toBe(1);
+    expect(out[6 * w + 51]).toBe(0);
+  });
+});
+
+describe('fillEnclosedHoles', () => {
+  it('fills a large enclosed hole (a hand) but not a big see-through gap', () => {
+    const w = 100;
+    const h = 100;
+    const a = new Float32Array(w * h);
+    for (let y = 5; y < 95; y++) for (let x = 5; x < 95; x++) a[y * w + x] = 1;
+    for (let y = 20; y < 30; y++) for (let x = 20; x < 30; x++) a[y * w + x] = 0; // hand: 100 px
+    for (let y = 40; y < 90; y++) for (let x = 40; x < 90; x++) a[y * w + x] = 0; // gap: 2500 px
+    const { alpha, added } = fillEnclosedHoles(a, w, h, 0.04);
+    expect(alpha[25 * w + 25]).toBe(1);
+    expect(added[25 * w + 25]).toBe(1);
+    expect(alpha[60 * w + 60]).toBe(0);
   });
 });

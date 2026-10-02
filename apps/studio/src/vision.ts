@@ -2,6 +2,8 @@ import { FilesetResolver, ImageSegmenter, PoseLandmarker } from '@mediapipe/task
 import { MEDIAPIPE_VERSION, type JointName, type Vec2 } from '@tryon/engine';
 
 /** Categories of the MediaPipe "selfie multiclass" segmentation model. */
+const BODY_SKIN = 2;
+const FACE_SKIN = 3;
 const CLOTHES = 4;
 const ACCESSORIES = 5;
 
@@ -75,8 +77,11 @@ export class Vision {
     return new Vision(segmenter, pose);
   }
 
-  /** Probability (0..1) that each pixel is clothing, at the image's size. */
-  segmentClothes(image: HTMLCanvasElement, includeAccessories: boolean): Float32Array {
+  /**
+   * Probabilities (0..1) that each pixel is clothing and that it is skin (hands, arms, face),
+   * at the image's size.
+   */
+  segmentClothes(image: HTMLCanvasElement, includeAccessories: boolean): { clothes: Float32Array; skin: Float32Array } {
     const result = this.segmenter.segment(image);
     const masks = result.confidenceMasks ?? [];
     if (masks.length <= CLOTHES) throw new Error('Unexpected segmentation model output');
@@ -87,8 +92,11 @@ export class Vision {
       const acc = masks[ACCESSORIES].getAsFloat32Array();
       for (let i = 0; i < clothes.length; i++) clothes[i] = Math.min(1, clothes[i] + acc[i]);
     }
+    const skin = Float32Array.from(masks[BODY_SKIN].getAsFloat32Array());
+    const face = masks[FACE_SKIN].getAsFloat32Array();
+    for (let i = 0; i < skin.length; i++) skin[i] = Math.min(1, skin[i] + face[i]);
     result.close();
-    return resize(clothes, mw, mh, image.width, image.height);
+    return { clothes: resize(clothes, mw, mh, image.width, image.height), skin: resize(skin, mw, mh, image.width, image.height) };
   }
 
   /** Find the wearer's joints in a model photo (pixels), or null if no person is visible. */

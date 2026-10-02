@@ -10,6 +10,9 @@
  *   --pexels     Pexels (free licence, commercial use allowed). Needs PEXELS_API_KEY.
  *   --roboflow   Roboflow Universe datasets (CC BY 4.0) with kameez / shalwar / dupatta
  *                boxes, used to measure hem-detection accuracy. Needs ROBOFLOW_API_KEY.
+ *   --hf-pk      Hugging Face "pakistani_fashion_dataset" (~10k Pakistani e-commerce photos).
+ *                The photos belong to the brands, so they go to datasets/internal-*:
+ *                accuracy testing only, never demos, catalogs or training a shipped model.
  *
  * Output: datasets/<source>/<item>/photo.jpg + product.json + source.json (+ labels.json)
  */
@@ -23,16 +26,19 @@ const DATASETS = join(root, 'datasets');
 const args = process.argv.slice(2);
 const has = (f) => args.includes(f);
 const LIMIT = Number(args[args.indexOf('--limit') + 1]) || 40;
-const all = !has('--openverse') && !has('--pexels') && !has('--roboflow');
+const all = !has('--openverse') && !has('--pexels') && !has('--roboflow') && !has('--hf-pk');
 
 /** Searches, with the section each one represents. */
 const QUERIES = [
   { q: 'shalwar kameez', gender: 'women' },
-  { q: 'salwar kameez woman', gender: 'women' },
-  { q: 'pakistani dress woman', gender: 'women' },
+  { q: 'salwar kameez', gender: 'women' },
+  { q: 'salwar suit', gender: 'women' },
+  { q: 'pakistani dress', gender: 'women' },
+  { q: 'churidar', gender: 'women' },
   { q: 'shalwar kameez man', gender: 'men' },
-  { q: 'kurta pajama man', gender: 'men' },
-  { q: 'pakistani kurta', gender: 'men' },
+  { q: 'pathani suit', gender: 'men' },
+  { q: 'kurta pajama', gender: 'men' },
+  { q: 'kurta', gender: 'men' },
 ];
 
 /** Roboflow Universe projects (workspace/project/version), CC BY 4.0 at time of writing. */
@@ -41,10 +47,24 @@ const ROBOFLOW = [
   { workspace: 'cooking-pot', project: 'dupatta', version: 1 },
 ];
 
+/** Identify ourselves (Wikimedia and others require a descriptive user agent). */
+const UA = { 'User-Agent': 'AI-Clothing-Wear-dataset-fetcher/0.2 (https://github.com/SyedBaqirHashmi/AI-Clothing-Wear; test images for a virtual try-on)' };
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/** Polite fetch: one retry schedule for 429/503 (honours Retry-After). */
+async function politeFetch(url, headers = {}) {
+  for (let attempt = 0; ; attempt++) {
+    const res = await fetch(url, { headers: { ...UA, ...headers } });
+    if ((res.status !== 429 && res.status !== 503) || attempt >= 4) return res;
+    const wait = Number(res.headers.get('retry-after')) * 1000 || 2000 * 2 ** attempt;
+    await sleep(Math.min(wait, 30000));
+  }
+}
+
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
 
 async function getJson(url, headers = {}) {
-  const res = await fetch(url, { headers });
+  const res = await politeFetch(url, headers);
   if (!res.ok) throw new Error(`${res.status} ${res.statusText} for ${url}`);
   return res.json();
 }
@@ -52,7 +72,9 @@ async function getJson(url, headers = {}) {
 async function saveItem(source, id, imageUrl, meta, attribution, headers = {}) {
   const dir = join(DATASETS, source, slug(id));
   if (existsSync(join(dir, 'photo.jpg'))) return false;
-  const res = await fetch(imageUrl, { headers });
+  // Space out requests to the same host (Wikimedia rate-limits bursts).
+  await sleep(new URL(imageUrl).host.endsWith('wikimedia.org') ? 1200 : 150);
+  const res = await politeFetch(imageUrl, headers);
   if (!res.ok) return false;
   const buf = Buffer.from(await res.arrayBuffer());
   if (buf.length < 20_000) return false; // thumbnails / broken images
@@ -67,10 +89,16 @@ async function saveItem(source, id, imageUrl, meta, attribution, headers = {}) {
 async function openverse() {
   let n = 0;
   for (const { q, gender } of QUERIES) {
-    // Licences that allow commercial use; tall photos (people standing).
-    const url = `https://api.openverse.org/v1/images/?q=${encodeURIComponent(q)}&license_type=commercial&aspect_ratio=tall&size=large&page_size=${LIMIT}`;
-    const data = await getJson(url);
-    for (const r of data.results ?? []) {
+    // Licences that allow commercial use; tall photos (people standing). Anonymous requests
+    // are limited to 20 results per page.
+    const results = [];
+    for (let page = 1; results.length < LIMIT && page <= Math.ceil(LIMIT / 20); page++) {
+      const url = `https://api.openverse.org/v1/images/?q=${encodeURIComponent(q)}&license_type=commercial&aspect_ratio=tall&page_size=20&page=${page}`;
+      const data = await getJson(url).catch(() => ({ results: [] }));
+      if (!data.results?.length) break;
+      results.push(...data.results);
+    }
+    for (const r of results.slice(0, LIMIT)) {
       const ok = await saveItem(
         'openverse',
         `${q}-${r.id}`,
@@ -147,10 +175,34 @@ async function roboflow() {
   return n;
 }
 
+/** Random sample (fixed seed) of the Hugging Face Pakistani fashion dataset. */
+async function hfPakistani() {
+  const repo = 'mohummadmahad/pakistani_fashion_dataset';
+  const info = await getJson(`https://huggingface.co/api/datasets/${repo}`);
+  const files = info.siblings.map((x) => x.rfilename).filter((f) => /^train\/\d+\.jpe?g$/i.test(f));
+  let seed = 42;
+  const rand = () => ((seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296);
+  const pick = [...files].sort(() => rand() - 0.5).slice(0, LIMIT);
+  let n = 0;
+  for (const f of pick) {
+    const id = f.replace(/^train\//, '').replace(/\.\w+$/, '');
+    const ok = await saveItem(
+      'internal-hf-pk',
+      `pk-${id}`,
+      `https://huggingface.co/datasets/${repo}/resolve/main/${f}`,
+      { name: { en: `Pakistani fashion ${id}` } },
+      { source: `Hugging Face ${repo}`, file: f, license: 'Dataset card says OpenRAIL, but the photos come from Pakistani e-commerce sites and belong to the brands: INTERNAL TESTING ONLY' },
+    ).catch(() => false);
+    if (ok) n++;
+  }
+  return n;
+}
+
 const tasks = [
   ...(all || has('--openverse') ? [['openverse', openverse]] : []),
   ...(has('--pexels') ? [['pexels', pexels]] : []),
   ...(has('--roboflow') ? [['roboflow', roboflow]] : []),
+  ...(has('--hf-pk') ? [['hf-pk', hfPakistani]] : []),
 ];
 let failed = 0;
 for (const [name, fn] of tasks) {

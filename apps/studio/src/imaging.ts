@@ -233,15 +233,16 @@ export function closeHoles(alpha: Float32Array, w: number, h: number, r: number)
 }
 
 /**
- * Fill colours of `unknown` pixels from their known neighbours (push-pull pyramid).
+ * Fill colours of `unknown` pixels from nearby `known` pixels (push-pull pyramid).
+ * Pass the garment as `known`, so holes get fabric colour, not skin or background.
  * Good enough for small occluded patches of fabric.
  */
-export function inpaint(img: Rgba, unknown: Uint8Array): void {
+export function inpaint(img: Rgba, unknown: Uint8Array, known?: Uint8Array): void {
   const { width: w, height: h, data } = img;
   type Level = { w: number; h: number; c: Float32Array; wt: Float32Array };
   const base: Level = { w, h, c: new Float32Array(w * h * 3), wt: new Float32Array(w * h) };
   for (let i = 0; i < w * h; i++) {
-    if (unknown[i]) continue;
+    if (unknown[i] || (known && !known[i])) continue;
     base.wt[i] = 1;
     for (let k = 0; k < 3; k++) base.c[i * 3 + k] = data[i * 4 + k];
   }
@@ -276,10 +277,31 @@ export function inpaint(img: Rgba, unknown: Uint8Array): void {
       }
     }
   }
+  const holes: number[] = [];
   for (let i = 0; i < w * h; i++) {
     if (!unknown[i]) continue;
+    holes.push(i);
+    // base.c holds the pulled-down average for pixels that had no data (wt set to 1 above).
     const wt = base.wt[i] || 1;
     for (let k = 0; k < 3; k++) data[i * 4 + k] = base.c[i * 3 + k] / wt;
+  }
+  // The pyramid gives blocky colours; relax them so each patch blends in from its border
+  // (harmonic infill: every filled pixel becomes the average of its fabric / filled
+  // neighbours; background or skin next to the garment never contributes).
+  const usable = (j: number) => unknown[j] === 1 || !known || known[j] === 1;
+  for (let iter = 0; iter < 80; iter++) {
+    for (const i of holes) {
+      const x = i % w;
+      const n = [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, i >= w ? i - w : -1, i < w * (h - 1) ? i + w : -1].filter(
+        (j) => j >= 0 && usable(j),
+      );
+      if (!n.length) continue;
+      for (let k = 0; k < 3; k++) {
+        let sum = 0;
+        for (const j of n) sum += data[j * 4 + k];
+        data[i * 4 + k] = sum / n.length;
+      }
+    }
   }
 }
 
@@ -332,4 +354,125 @@ export function coverage(alpha: Float32Array): number {
   let s = 0;
   for (let i = 0; i < alpha.length; i++) s += alpha[i];
   return s / alpha.length;
+}
+
+/**
+ * Keep the garment and drop stray fragments: other outfits shown beside the model, specks of
+ * background. Keeps connected regions at least `minFraction` of the largest one (8-connected,
+ * alpha > 0.5); everything else becomes transparent.
+ */
+export function keepMainRegions(alpha: Float32Array, w: number, h: number, minFraction = 0.08): Float32Array {
+  const label = new Int32Array(w * h).fill(-1);
+  const sizes: number[] = [];
+  const queue = new Int32Array(w * h);
+  for (let start = 0; start < w * h; start++) {
+    if (label[start] !== -1 || alpha[start] <= 0.5) continue;
+    const id = sizes.length;
+    let head = 0;
+    let tail = 0;
+    queue[tail++] = start;
+    label[start] = id;
+    while (head < tail) {
+      const i = queue[head++];
+      const x = i % w;
+      const y = (i - x) / w;
+      for (let dy = -1; dy <= 1; dy++) {
+        const ny = y + dy;
+        if (ny < 0 || ny >= h) continue;
+        for (let dx = -1; dx <= 1; dx++) {
+          const nx = x + dx;
+          if (nx < 0 || nx >= w) continue;
+          const j = ny * w + nx;
+          if (label[j] === -1 && alpha[j] > 0.5) {
+            label[j] = id;
+            queue[tail++] = j;
+          }
+        }
+      }
+    }
+    sizes.push(tail);
+  }
+  if (!sizes.length) return alpha;
+  const keepMin = Math.max(...sizes) * minFraction;
+  const keep = sizes.map((n) => n >= keepMin);
+  // Soft edge pixels (alpha ≤ 0.5) follow their nearest labelled neighbour in the row.
+  const out = new Float32Array(alpha.length);
+  for (let y = 0; y < h; y++) {
+    let lastKeep = false;
+    for (let x = 0; x < w; x++) {
+      const i = y * w + x;
+      if (label[i] >= 0) lastKeep = keep[label[i]];
+      else if (alpha[i] > 0) {
+        const right = x + 1 < w && label[i + 1] >= 0 ? keep[label[i + 1]] : false;
+        const below = y + 1 < h && label[i + w] >= 0 ? keep[label[i + w]] : false;
+        const above = y > 0 && label[i - w] >= 0 ? keep[label[i - w]] : false;
+        if (!(lastKeep || right || below || above)) continue;
+      }
+      if (label[i] < 0 || keep[label[i]]) out[i] = alpha[i];
+    }
+  }
+  return out;
+}
+
+/**
+ * Fill holes completely enclosed by the garment (a hand resting on the kameez, a strand of
+ * hair), whatever their size, up to `maxFraction` of the garment area so real see-through
+ * gaps stay open. Returns the filled mask and the pixels that were added.
+ */
+export function fillEnclosedHoles(alpha: Float32Array, w: number, h: number, maxFraction = 0.04): { alpha: Float32Array; added: Uint8Array } {
+  const outside = new Uint8Array(w * h);
+  const queue = new Int32Array(w * h);
+  let head = 0;
+  let tail = 0;
+  const seed = (i: number) => {
+    if (!outside[i] && alpha[i] <= 0.5) {
+      outside[i] = 1;
+      queue[tail++] = i;
+    }
+  };
+  for (let x = 0; x < w; x++) {
+    seed(x);
+    seed((h - 1) * w + x);
+  }
+  for (let y = 0; y < h; y++) {
+    seed(y * w);
+    seed(y * w + w - 1);
+  }
+  while (head < tail) {
+    const i = queue[head++];
+    const x = i % w;
+    if (x > 0) seed(i - 1);
+    if (x < w - 1) seed(i + 1);
+    if (i >= w) seed(i - w);
+    if (i < w * (h - 1)) seed(i + w);
+  }
+  let garment = 0;
+  for (let i = 0; i < w * h; i++) if (alpha[i] > 0.5) garment++;
+  const maxHole = garment * maxFraction;
+  const out = Float32Array.from(alpha);
+  const added = new Uint8Array(w * h);
+  const seen = new Uint8Array(w * h);
+  for (let start = 0; start < w * h; start++) {
+    if (outside[start] || seen[start] || alpha[start] > 0.5) continue;
+    head = 0;
+    tail = 0;
+    queue[tail++] = start;
+    seen[start] = 1;
+    while (head < tail) {
+      const i = queue[head++];
+      const x = i % w;
+      for (const j of [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, i >= w ? i - w : -1, i < w * (h - 1) ? i + w : -1]) {
+        if (j >= 0 && !seen[j] && !outside[j] && alpha[j] <= 0.5) {
+          seen[j] = 1;
+          queue[tail++] = j;
+        }
+      }
+    }
+    if (tail > maxHole) continue;
+    for (let k = 0; k < tail; k++) {
+      out[queue[k]] = 1;
+      added[queue[k]] = 1;
+    }
+  }
+  return { alpha: out, added };
 }

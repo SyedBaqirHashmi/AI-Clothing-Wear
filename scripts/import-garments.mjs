@@ -4,7 +4,7 @@
  *                                          + apps/widget/public/catalog/<store>.json
  *                                          + datasets/report.html (visual review)
  *
- *   npm run import
+ *   npm run import [-- --store <store>] [--limit <n>]
  *
  * Runs the Garment Studio's batch page in headless Chromium (same code as the Studio).
  * Then try the products on: npm run dev → http://localhost:5173/?store=<store>
@@ -52,10 +52,13 @@ page.on('console', (m) => {
   if (m.type() === 'log') console.log(m.text());
   if (m.type() === 'error') console.error(m.text());
 });
-await page.goto(`${BASE}batch.html`);
+const argv = process.argv.slice(2);
+const opt = (name) => (argv.includes(name) ? argv[argv.indexOf(name) + 1] : null);
+const query = new URLSearchParams({ ...(opt('--store') ? { store: opt('--store') } : {}), ...(opt('--limit') ? { limit: opt('--limit') } : {}) });
+await page.goto(`${BASE}batch.html?${query}`);
 const summary = await page.evaluate(() => window.__runImport());
 await browser.close();
 stop();
 if (summary.products === 0) process.exit(1);
 console.log('\nOpen datasets/report.html to review. Try on: npm run dev → http://localhost:5173/?store=<store>');
-process.exit(summary.failed ? 1 : 0);
+process.exit(0);

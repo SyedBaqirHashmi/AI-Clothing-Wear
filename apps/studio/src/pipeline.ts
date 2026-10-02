@@ -3,7 +3,7 @@
  * photo → cut-out + joints → (optional) suit split → exported layer (WebP + spec).
  */
 import { completeJoints, type Coverage, type GarmentLayerSpec, type JointName, type Slot, type Vec2 } from '@tryon/engine';
-import { closeHoles, guidedFilter, inpaint, levels, luminance, maskBounds, removePlainBackground, splitMask, type Rgba } from './imaging.ts';
+import { closeHoles, fillEnclosedHoles, guidedFilter, inpaint, keepMainRegions, levels, luminance, maskBounds, removePlainBackground, splitMask, type Rgba } from './imaging.ts';
 import type { Vision } from './vision.ts';
 
 /** Working resolution: enough detail for a 1024 px garment texture, fast to process. */
@@ -72,14 +72,22 @@ export async function cutOut(photo: HTMLCanvasElement, vision: () => Promise<Vis
   const h = photo.height;
   const pixels: Rgba = { data: photo.getContext('2d')!.getImageData(0, 0, w, h).data, width: w, height: h };
   let alpha: Float32Array;
+  let skin: Float32Array | null = null;
   let joints = templateJoints(w, h);
   let personFound = false;
   if (opts.kind === 'model') {
     const v = await vision();
-    const coarse = v.segmentClothes(photo, opts.accessories);
+    const seg = v.segmentClothes(photo, opts.accessories);
+    const clothes = seg.clothes;
+    skin = seg.skin;
     // Snap the low-resolution mask to the real garment edges.
     const r = Math.max(4, Math.round(Math.max(w, h) * 0.006));
-    alpha = levels(guidedFilter(luminance(pixels), coarse, w, h, r, 1e-3), 0.3, 0.7);
+    alpha = levels(guidedFilter(luminance(pixels), clothes, w, h, r, 1e-3), 0.3, 0.7);
+    // Edge refinement can creep over hands resting on the garment: carve skin back out, so
+    // those areas become holes that are filled with fabric below.
+    for (let i = 0; i < alpha.length; i++) if (skin[i] > 0.5) alpha[i] *= Math.max(0, 1 - (skin[i] - 0.5) * 4);
+    // Soft ring around skin: dilate the skin mask a little (blur radius) for the steps below.
+    skin = skin.map((v2) => Math.min(1, v2 * 3));
     const pose = v.detectPose(photo);
     if (pose) {
       personFound = true;
@@ -90,10 +98,22 @@ export async function cutOut(photo: HTMLCanvasElement, vision: () => Promise<Vis
     const box = maskBounds(alpha, w, h, 0.5, 0);
     if (box) joints = templateJoints(w, h, box);
   }
+  alpha = keepMainRegions(alpha, w, h);
   if (opts.fillGaps) {
-    const { alpha: closed, added } = closeHoles(alpha, w, h, Math.max(3, Math.round(Math.max(w, h) * 0.012)));
-    inpaint(pixels, added);
-    alpha = closed;
+    // Clean fabric only: pixels near skin carry skin colour in their soft edges.
+    const fabric = new Uint8Array(w * h);
+    for (let i = 0; i < fabric.length; i++) fabric[i] = alpha[i] > 0.5 && (!skin || skin[i] < 0.3) ? 1 : 0;
+    // Small notches at the edges, then enclosed holes of any size (hands resting on the garment).
+    const closed = closeHoles(alpha, w, h, Math.max(3, Math.round(Math.max(w, h) * 0.012)));
+    const filled = fillEnclosedHoles(closed.alpha, w, h);
+    const added = new Uint8Array(w * h);
+    for (let i = 0; i < added.length; i++) {
+      added[i] = closed.added[i] | filled.added[i];
+      // Garment pixels tinted by a neighbouring hand are recoloured too.
+      if (filled.alpha[i] > 0.5 && !fabric[i]) added[i] = 1;
+    }
+    inpaint(pixels, added, fabric);
+    alpha = filled.alpha;
   }
   return { pixels, alpha, joints, personFound };
 }
@@ -108,8 +128,12 @@ export function defaultSplitY(joints: Record<JointName, Vec2>): number {
 }
 
 /**
- * Find the kameez hem in a suit photo: below it the cut-out splits into two legs and the
- * fabric usually changes colour. Returns null when no clear hem is found.
+ * Find the kameez hem in a suit photo. Below a real hem three things happen together:
+ * the clothing gets clearly narrower (kameez → trouser legs), it splits into two legs, and
+ * the fabric often changes colour. Each signal alone is fooled by something common in
+ * Pakistani catalogues (side slits, hanging dupattas, prints, lehengas), so a split is only
+ * suggested when the width drop is strong and at least one other signal agrees.
+ * Returns null when there's no confident hem: the outfit then stays a single layer.
  */
 export function detectHem(c: CutoutResult): number | null {
   const { pixels, alpha, joints } = c;
@@ -119,25 +143,31 @@ export function detectHem(c: CutoutResult): number | null {
   const knee = avg(joints, 'R.knee', 'L.knee').y;
   const ankle = Math.min(h - 1, avg(joints, 'R.ankle', 'L.ankle').y);
   const sw = Math.hypot(joints['R.shoulder'].x - joints['L.shoulder'].x, joints['R.shoulder'].y - joints['L.shoulder'].y);
-  const y0 = Math.round(hip.y + (knee - hip.y) * 0.2);
-  const y1 = Math.round(Math.min(h - 2, ankle - (ankle - knee) * 0.15));
-  if (y1 - y0 < 20) return null;
-  const x0 = Math.max(0, Math.round(hip.x - sw * 1.2));
-  const x1 = Math.min(w - 1, Math.round(hip.x + sw * 1.2));
+  // Plausible kameez hems: from mid-thigh to mid-shin.
+  const y0 = Math.round(hip.y + (knee - hip.y) * 0.45);
+  const y1 = Math.round(Math.min(h - 2, knee + (ankle - knee) * 0.55));
+  if (y1 - y0 < 20 || sw < 10) return null;
+  const x0 = Math.max(0, Math.round(hip.x - sw * 1.6));
+  const x1 = Math.min(w - 1, Math.round(hip.x + sw * 1.6));
   const minRun = Math.max(3, Math.round(sw * 0.08));
 
   const rows = y1 - y0 + 1;
   const color = new Float32Array(rows * 3);
   const count = new Float32Array(rows);
+  const width = new Float32Array(rows); // outer extent of clothing in the row
   const legs = new Float32Array(rows); // 1 when the row has two or more separate clothing runs
   for (let y = y0; y <= y1; y++) {
+    const r = y - y0;
     let runs = 0;
     let run = 0;
+    let left = -1;
+    let right = -1;
     for (let x = x0; x <= x1; x++) {
       const i = y * w + x;
       if (alpha[i] > 0.6) {
         run++;
-        const r = y - y0;
+        if (left < 0) left = x;
+        right = x;
         color[r * 3] += pixels.data[i * 4];
         color[r * 3 + 1] += pixels.data[i * 4 + 1];
         color[r * 3 + 2] += pixels.data[i * 4 + 2];
@@ -148,37 +178,44 @@ export function detectHem(c: CutoutResult): number | null {
       }
     }
     if (run >= minRun) runs++;
-    legs[y - y0] = runs >= 2 ? 1 : 0;
+    legs[r] = runs >= 2 ? 1 : 0;
+    width[r] = left >= 0 ? (right - left) / sw : 0;
   }
-  const k = Math.max(4, Math.round(h * 0.03));
+  const k = Math.max(4, Math.round(h * 0.025));
   let best = -Infinity;
   let bestY: number | null = null;
   for (let r = k; r < rows - k; r++) {
-    const sum = (from: number, to: number) => {
+    const win = (from: number, to: number) => {
       const s = [0, 0, 0];
       let n = 0;
       let l = 0;
+      let wd = 0;
       for (let q = from; q < to; q++) {
         s[0] += color[q * 3];
         s[1] += color[q * 3 + 1];
         s[2] += color[q * 3 + 2];
         n += count[q];
         l += legs[q];
+        wd += width[q];
       }
-      return { c: s.map((v) => v / Math.max(1, n)), legs: l / (to - from), n };
+      return { c: s.map((v) => v / Math.max(1, n)), legs: l / (to - from), width: wd / (to - from), n };
     };
-    const above = sum(r - k, r);
-    const below = sum(r, r + k);
+    const above = win(r - k, r);
+    const below = win(r, r + k);
     if (above.n < k * minRun || below.n < k * minRun) continue;
-    const colorJump = Math.hypot(above.c[0] - below.c[0], above.c[1] - below.c[1], above.c[2] - below.c[2]) / 60;
+    // Width drop relative to the kameez width (0.25 = a quarter narrower).
+    const widthDrop = (above.width - below.width) / Math.max(0.5, above.width);
+    const colorJump = Math.hypot(above.c[0] - below.c[0], above.c[1] - below.c[1], above.c[2] - below.c[2]) / 80;
     const legSplit = below.legs - above.legs;
-    const score = colorJump + legSplit;
+    if (widthDrop < 0.2) continue; // no real narrowing: not a kameez hem
+    if (colorJump < 0.35 && legSplit < 0.4) continue; // nothing else agrees
+    const score = widthDrop * 2 + Math.min(colorJump, 1) + legSplit;
     if (score > best) {
       best = score;
       bestY = y0 + r;
     }
   }
-  return best >= 0.5 ? bestY : null;
+  return best >= 1.2 ? bestY : null;
 }
 
 export function layerAlpha(c: CutoutResult, keep: Keep, splitY: number): Float32Array {

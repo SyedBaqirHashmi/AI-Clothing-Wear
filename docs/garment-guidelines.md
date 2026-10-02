@@ -33,6 +33,13 @@ How to turn a brand's product photo into a try-on garment with the **Garment Stu
 5. **Preview try-on:** check it on the same photo, on another photo ("Other photo…"), or live on the webcam. Raise your arms: sleeves should follow; the kameez should hang.
 6. **Download:** saves each layer image (WebP) and the product's catalog JSON. Put the images in the widget's `garments/` folder and add the JSON entry to `catalog/<store>.json`. Phase 3 replaces this step with one-click publishing.
 
+## What real catalogue photos taught us (tested on ~300 Pakistani e-commerce photos)
+- **Unstitched fabric shots are common**: many listings show only fabric. These have no person and are skipped automatically ("Skipped: no person in the photo").
+- **Hands resting on the kameez** leave holes. They're filled with the surrounding fabric colour (skin is detected separately and never used). Prints can't be recreated inside those patches yet, so the patches look like soft solid colour.
+- **Dupattas draped over the kameez** stay part of the main layer. That looks right on the shopper, since it's how the outfit was styled.
+- **Automatic kameez/shalwar splitting is deliberately conservative.** It only splits when the clothing clearly narrows below the hem *and* another signal agrees. Long kurtas with side slits, lehengas and hanging dupattas fooled looser rules. When unsure, the whole outfit stays one layer. For suits that need a separate shalwar, set the split in the Studio or with `splitAt` in `product.json`.
+- **Stray fragments** (other colourways shown beside the model, background props) are removed automatically.
+
 ## Known limits (v1)
 - One photo gives the **front** of the garment only.
 - The part of a shalwar hidden under the kameez isn't in the photo. That's fine for try-on, because the kameez covers it there too.

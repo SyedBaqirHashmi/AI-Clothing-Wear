@@ -52,13 +52,17 @@ The system must work for *any* shalwar kameez, kurta or 3-piece suit, so it's te
 | [Pexels](https://www.pexels.com) | free stock photos | Pexels License (commercial use allowed) | free API key → `PEXELS_API_KEY` |
 | [Pakistani clothes](https://universe.roboflow.com/cooking-pot/pakistani-clothes), [Dupatta](https://universe.roboflow.com/cooking-pot/dupatta) (Roboflow) | 470+ photos with **kameez / shalwar / dupatta boxes**: used to *measure* hem-detection accuracy | CC BY 4.0 | free account → `ROBOFLOW_API_KEY` |
 | [IndoFashion](https://indofashion.readthedocs.io) | 106k e-commerce images, 15 ethnic-wear classes | research use, access by form | request access (later, for training models) |
+| [Pakistani fashion dataset](https://huggingface.co/datasets/mohummadmahad/pakistani_fashion_dataset) (Hugging Face) | ~10k photos from Pakistani e-commerce: the most realistic test set | photos belong to the brands → **internal accuracy testing only** (`datasets/internal-*`) | nothing |
 
 ```bash
 npm run datasets -- --openverse              # no key needed
+npm run datasets -- --hf-pk --limit 300      # internal test set (brand photos: never shown or shipped)
 PEXELS_API_KEY=… npm run datasets -- --pexels
 ROBOFLOW_API_KEY=… npm run datasets -- --roboflow
 npm run import                               # → datasets/report.html with accuracy figures
 ```
+`npm run import -- --store <folder> --limit 40` processes a subset for quick tuning rounds.
+
 Every photo is saved with its licence and author (`source.json`). Photos are never scraped from search engines or shops: a picture being visible online doesn't make it free to use.
 
 **Network access:** the cloud development environment blocks these hosts by default. Allow them in the session's environment settings (title bar → cloud environment menu → Edit → Network access): `api.openverse.org`, `api.pexels.com`, `images.pexels.com`, `api.roboflow.com`, `universe.roboflow.com`, `source.roboflow.com`, `storage.googleapis.com`. Openverse photos come from many hosts (Flickr, Wikimedia, …), so a broader access level works best for it. On your own computer, no setup is needed.
