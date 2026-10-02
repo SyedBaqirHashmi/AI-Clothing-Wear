@@ -21,7 +21,8 @@
     "e2e:caching": "node tests/e2e/caching.mjs",
     "import": "node scripts/import-garments.mjs",
     "build:site": "npm run build && rm -rf apps/widget/dist/studio && cp -r apps/studio/dist apps/widget/dist/studio",
-    "datasets": "NODE_USE_ENV_PROXY=1 NODE_NO_WARNINGS=1 node scripts/fetch-datasets.mjs"
+    "datasets": "NODE_USE_ENV_PROXY=1 NODE_NO_WARNINGS=1 node scripts/fetch-datasets.mjs",
+    "e2e:real": "node tests/e2e/real-garments.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",
