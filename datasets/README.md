@@ -44,6 +44,14 @@ datasets/
 ## Which photos work
 See `docs/garment-guidelines.md`. In short: model facing the camera, standing straight, arms slightly away from the body, the full outfit visible, a plain background, and at least 1500 px on the long side.
 
+## Get photos automatically (open licences)
+```bash
+npm run datasets -- --openverse        # CC-licensed photos, no key
+npm run datasets -- --pexels           # needs PEXELS_API_KEY
+npm run datasets -- --roboflow         # labelled kameez/shalwar/dupatta, needs ROBOFLOW_API_KEY
+```
+Each photo folder also gets `source.json` (licence, author, link) and, for labelled datasets, `labels.json`, which the import uses to measure hem-detection accuracy. See `docs/testing-guide.md`.
+
 ## Run the import
 ```bash
 npm run import                 # processes every product folder

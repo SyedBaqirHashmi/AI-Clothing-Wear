@@ -54,7 +54,9 @@ function datasetsBridge(): Plugin {
                   const files = readdirSync(dir).filter((f) => IMAGE.test(f)).sort();
                   const metaPath = join(dir, 'product.json');
                   const meta = existsSync(metaPath) ? JSON.parse(readFileSync(metaPath, 'utf8')) : {};
-                  return { store, product, files, meta };
+                  const labelsPath = join(dir, 'labels.json');
+                  const labels = existsSync(labelsPath) ? JSON.parse(readFileSync(labelsPath, 'utf8')) : null;
+                  return { store, product, files, meta, labels };
                 }),
             );
             return send(200, products);

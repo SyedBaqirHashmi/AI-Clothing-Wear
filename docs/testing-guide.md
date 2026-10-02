@@ -43,6 +43,27 @@ Phones that matter most, in order:
 Also try once on mobile data, not Wi-Fi, for first-load time (a stopwatch is fine).
 
 ## 2. Real clothes
+### a) Open datasets (automatic, hundreds of garments)
+The system must work for *any* shalwar kameez, kurta or 3-piece suit, so it's tested on large sets of openly licensed photos, not one brand's catalogue:
+
+| Source | What | Licence | Needs |
+|---|---|---|---|
+| [Openverse](https://openverse.org) | CC-licensed photos ("shalwar kameez", "kurta", …), commercial-use licences only | CC BY / CC BY-SA / CC0 | nothing |
+| [Pexels](https://www.pexels.com) | free stock photos | Pexels License (commercial use allowed) | free API key → `PEXELS_API_KEY` |
+| [Pakistani clothes](https://universe.roboflow.com/cooking-pot/pakistani-clothes), [Dupatta](https://universe.roboflow.com/cooking-pot/dupatta) (Roboflow) | 470+ photos with **kameez / shalwar / dupatta boxes**: used to *measure* hem-detection accuracy | CC BY 4.0 | free account → `ROBOFLOW_API_KEY` |
+| [IndoFashion](https://indofashion.readthedocs.io) | 106k e-commerce images, 15 ethnic-wear classes | research use, access by form | request access (later, for training models) |
+
+```bash
+npm run datasets -- --openverse              # no key needed
+PEXELS_API_KEY=… npm run datasets -- --pexels
+ROBOFLOW_API_KEY=… npm run datasets -- --roboflow
+npm run import                               # → datasets/report.html with accuracy figures
+```
+Every photo is saved with its licence and author (`source.json`). Photos are never scraped from search engines or shops: a picture being visible online doesn't make it free to use.
+
+**Network access:** the cloud development environment blocks these hosts by default. Allow them in the session's environment settings (title bar → cloud environment menu → Edit → Network access): `api.openverse.org`, `api.pexels.com`, `images.pexels.com`, `api.roboflow.com`, `universe.roboflow.com`, `source.roboflow.com`, `storage.googleapis.com`. Openverse photos come from many hosts (Flickr, Wikimedia, …), so a broader access level works best for it. On your own computer, no setup is needed.
+
+### b) Brand photos (pilots)
 1. Collect photos (see `datasets/README.md` and `docs/garment-guidelines.md`): 5–10 products per brand to start, mixing 3-piece suits, kurtas and kameez.
 2. Upload them to the repository's **`datasets` branch**: on github.com switch to `datasets` → Add file → Upload files, keeping the `datasets/<store>/<product>/photo.jpg` layout.
 3. Tell me. I'll pull them, run `npm run import`, review the report, fix whatever the real photos expose, and send you screenshots. Running it yourself also works: `npm run import`, then `npm run dev` → `http://localhost:5173/?store=<store>`.
@@ -65,7 +86,9 @@ Share the store link (or the error you see), and I'll fix theme-specific issues.
 | 1 | Repository private | Protect code and brand photos | ☐ |
 | 2 | Cloudflare account + Pages project | https link for phones; production hosting | ☐ |
 | 3 | Phone test reports (budget + mid-range + iPhone) | Prove 720p / 30 fps; tune smoothing and quality steps | ☐ |
-| 4 | 5–10 real product photos per brand | Tune cut-out, hem detection, fit on real garments | ☐ |
+| 4 | Network access for the open datasets (or run `npm run datasets` on your computer) | Test and tune on hundreds of real garments | ☐ |
+| 4b | Free Pexels and Roboflow API keys | More photos; labelled photos for accuracy figures | ☐ |
+| 4c | 5–10 product photos per pilot brand | Final check on their exact catalogue | Later |
 | 5 | Shopify development store | Real cart integration test | ☐ |
 | 6 | WooCommerce test site (optional) | Second platform | ☐ |
 | 7 | Product name + domain (D-7) | Branding, production URL | ☐ |

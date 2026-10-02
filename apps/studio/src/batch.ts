@@ -24,6 +24,8 @@ interface Entry {
     kind?: PhotoKind;
     splitAt?: number;
   };
+  /** Hand-labelled boxes ([x, y, w, h] as fractions), e.g. from Roboflow datasets. */
+  labels: { boxes: { label: string; box: [number, number, number, number] }[] } | null;
 }
 
 interface ReportRow {
@@ -33,6 +35,8 @@ interface ReportRow {
   notes: string[];
   preview: string;
   layers: { slot: string; coverage: string; kb: number; thumb: string }[];
+  /** Accuracy measurements (when the photo has labels). */
+  metrics: { personFound?: boolean; hemFound?: boolean; hemError?: number };
 }
 
 const logEl = document.getElementById('log')!;
@@ -114,7 +118,7 @@ function coverageOf(alpha: Float32Array): number {
 
 async function importProduct(e: Entry): Promise<{ product: object | null; row: ReportRow }> {
   const notes: string[] = [];
-  const row: ReportRow = { store: e.store, product: e.product, ok: false, notes, preview: '', layers: [] };
+  const row: ReportRow = { store: e.store, product: e.product, ok: false, notes, preview: '', layers: [], metrics: {} };
   const main = e.files.find((f) => /^photo\./i.test(f)) ?? e.files.find((f) => !/^dupatta\./i.test(f));
   if (!main) {
     notes.push('No photo found in the folder.');
@@ -127,7 +131,16 @@ async function importProduct(e: Entry): Promise<{ product: object | null; row: R
   const cov = coverageOf(c.alpha);
   if (cov < 0.03) notes.push(`Very little clothing found (${(cov * 100).toFixed(1)}% of the photo).`);
 
-  const hem = e.meta.splitAt !== undefined ? e.meta.splitAt * photo.height : detectHem(c);
+  row.metrics.personFound = c.personFound;
+  const detected = detectHem(c);
+  row.metrics.hemFound = detected !== null;
+  // Labelled kameez: its box bottom is the true hem. Error as a fraction of photo height.
+  const kameez = e.labels?.boxes.find((b) => /kameez|kurta|shirt/.test(b.label));
+  if (kameez && detected !== null) {
+    row.metrics.hemError = Math.abs(detected / photo.height - (kameez.box[1] + kameez.box[3]));
+    notes.push(`Hem ${(row.metrics.hemError * 100).toFixed(1)}% of the photo height from the labelled hem.`);
+  }
+  const hem = e.meta.splitAt !== undefined ? e.meta.splitAt * photo.height : detected;
   const type = e.meta.type ?? (hem !== null ? 'suit' : 'top');
   if (type === 'suit' && hem === null) notes.push('Kameez hem not detected: used the default (just above the knee).');
   const splitY = type === 'suit' ? (hem ?? defaultSplitY(c.joints)) : null;
@@ -176,6 +189,21 @@ async function importProduct(e: Entry): Promise<{ product: object | null; row: R
   };
 }
 
+/** Accuracy summary across all photos (and labelled ones for the hem). */
+function metrics(rows: ReportRow[]) {
+  const m = rows.map((r) => r.metrics);
+  const pct = (n: number, d: number) => (d ? Math.round((100 * n) / d) : 0);
+  const errs = m.map((x) => x.hemError).filter((x): x is number => x !== undefined).sort((a, b) => a - b);
+  return {
+    photos: rows.length,
+    personFoundPct: pct(m.filter((x) => x.personFound).length, m.length),
+    hemFoundPct: pct(m.filter((x) => x.hemFound).length, m.length),
+    labelledHems: errs.length,
+    hemMedianErrorPct: errs.length ? +(errs[errs.length >> 1] * 100).toFixed(1) : null,
+    hemWithin5Pct: errs.length ? pct(errs.filter((x) => x <= 0.05).length, errs.length) : null,
+  };
+}
+
 function reportHtml(rows: ReportRow[]): string {
   const esc = (s: string) => s.replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch]!);
   const cards = rows
@@ -191,6 +219,10 @@ function reportHtml(rows: ReportRow[]): string {
     )
     .join('\n');
   const ready = rows.filter((r) => r.ok && !r.notes.length).length;
+  const m = metrics(rows);
+  const summary = `<p>Person detected: <b>${m.personFoundPct}%</b> · kameez hem found: <b>${m.hemFoundPct}%</b>${
+    m.labelledHems ? ` · hem accuracy on ${m.labelledHems} labelled photos: median error <b>${m.hemMedianErrorPct}%</b> of photo height, <b>${m.hemWithin5Pct}%</b> within 5%` : ''
+  }</p>`;
   return `<!doctype html><html><head><meta charset="utf-8"><title>Import report</title><style>
 body{margin:0;padding:24px;font:14px system-ui,sans-serif;background:#121214;color:#f1efe9}
 section{border:1px solid #2c2c33;border-left:6px solid #3c9;border-radius:10px;padding:12px 16px;margin:0 0 16px;background:#1b1b1f}
@@ -199,7 +231,7 @@ h2{font-size:16px;margin:0 0 10px}small{color:#9d9a92;font-weight:400;margin-lef
 .row{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}.row>img{height:360px;border-radius:6px}
 figure{margin:0;text-align:center}figure img{height:160px;background:repeating-conic-gradient(#3a3a40 0 25%,#2c2c31 0 50%) 0 0/12px 12px;border-radius:6px}
 figcaption{font-size:12px;color:#9d9a92}a{color:#d9b25a}li{color:#e8c77d}
-</style></head><body><h1>Import report</h1><p>${rows.length} products · ${ready} ready · ${rows.filter((r) => r.ok && r.notes.length).length} to check · ${rows.filter((r) => !r.ok).length} failed</p>${cards}</body></html>`;
+</style></head><body><h1>Import report</h1><p>${rows.length} products · ${ready} ready · ${rows.filter((r) => r.ok && r.notes.length).length} to check · ${rows.filter((r) => !r.ok).length} failed</p>${summary}${cards}</body></html>`;
 }
 
 async function run(): Promise<{ products: number; ready: number; failed: number }> {
@@ -220,7 +252,7 @@ async function run(): Promise<{ products: number; ready: number; failed: number 
       for (const n of row.notes) log(`   ! ${n}`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      rows.push({ store: e.store, product: e.product, ok: false, notes: [msg], preview: '', layers: [] });
+      rows.push({ store: e.store, product: e.product, ok: false, notes: [msg], preview: '', layers: [], metrics: {} });
       log(`   ✗ ${msg}`);
     }
   }
@@ -229,7 +261,12 @@ async function run(): Promise<{ products: number; ready: number; failed: number 
     log(`Catalog ${store}: ${res.ok ? 'saved' : 'FAILED'} (apps/widget/public/catalog/${store}.json)`);
   }
   await fetch('/__datasets/report', { method: 'POST', body: reportHtml(rows) });
-  const summary = { products: rows.length, ready: rows.filter((r) => r.ok && !r.notes.length).length, failed: rows.filter((r) => !r.ok).length };
+  const summary = {
+    products: rows.length,
+    ready: rows.filter((r) => r.ok && !r.notes.length).length,
+    failed: rows.filter((r) => !r.ok).length,
+    accuracy: metrics(rows),
+  };
   log(`Done: ${JSON.stringify(summary)}. Report: datasets/report.html`);
   return summary;
 }

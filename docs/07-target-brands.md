@@ -35,5 +35,8 @@ Verification method: open `https://<brand-site>/products.json` (works on Shopify
 
 Phase 0 action: ask each pilot brand for 20 products with the four items above.
 
-## 7.5 Internal test set (before brand agreements)
+## 7.5 Open datasets (main test set)
+The engine and garment pipeline are tested on **openly licensed** photos of shalwar kameez, kurtas and suits (Openverse, Pexels, Roboflow Universe CC BY 4.0 datasets with kameez/shalwar/dupatta labels), so the system works for any garment, not just one catalogue. `npm run datasets` downloads them with licence and author recorded per photo; `npm run import` reports accuracy. See `docs/testing-guide.md`.
+
+## 7.6 Internal test set (before brand agreements)
 For internal testing and model evaluation only, product images collected by hand from brand websites go in `datasets/` at the repo root. That folder is **git-ignored**: these images never enter the repository, a deployed build, or anything shown outside the team. Before using them to train a model that ships, or in any demo for a third party, get the brand's permission.
