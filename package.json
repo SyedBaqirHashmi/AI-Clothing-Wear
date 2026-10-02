@@ -1,0 +1,26 @@
+{
+  "name": "ai-clothing-wear",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w apps/demo",
+    "build": "npm run build -w apps/demo",
+    "garments": "node --experimental-strip-types --no-warnings scripts/make-garments.ts",
+    "typecheck": "tsc -p packages/engine && tsc -p apps/demo",
+    "test": "vitest run",
+    "e2e": "node tests/e2e/run.mjs",
+    "dev:phone": "HTTPS=1 npm run dev -w apps/demo",
+    "check": "npm run typecheck && npm test"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "playwright-core": "1.56",
+    "typescript": "^5.9.3",
+    "vite": "^5.4.21",
+    "vitest": "^2.1.9"
+  }
+}

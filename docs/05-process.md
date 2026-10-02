@@ -18,7 +18,7 @@
 | Check | Tool |
 |---|---|
 | Type check + lint + format | `tsc`, ESLint, Prettier; `ruff` + `mypy` for Python |
-| Unit tests | Vitest (filters, MLS warp, body model, rig parsing); pytest (API) |
+| Unit tests | Vitest (smoothing filter, skinning, body model, anchor expressions); pytest (API) |
 | End-to-end | Playwright + Chromium with a **fake camera fed from a recorded video of a person**; asserts the model loads, the pose is detected, the garment is drawn, and no errors occur |
 | Visual regression | Screenshot of fixed frames compared to a baseline (catches warp and rendering bugs) |
 | Bundle size budget | Fails if the widget or engine grows past its budget (section 2.3, N-07/N-08) |

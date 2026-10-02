@@ -11,10 +11,12 @@ Durations assume one full-time developer working with Claude. Each phase ends wi
 **Exit:** decisions signed off; at least 2 brands willing to pilot.
 
 ## Phase 1 — Try-On Engine (3–4 weeks) ← highest risk, done first
+**Status:** built and passing automated tests; waiting on real-phone measurements (see `docs/qa/phase1.md`).
+
 - Camera module (720p30, front/rear, orientation)
 - Pose worker + fallbacks, One-Euro filtering + prediction
 - Body model (anchors, estimation of missing points)
-- MLS garment warp + WebGL2 renderer + lighting transfer + layers
+- Garment skinning (bones) + WebGL2 renderer + lighting transfer + layers
 - Adaptive quality + performance heads-up display (fps, tracking Hz, latency)
 - Guidance system + upper-body mode
 - Demo page with 5 hand-rigged Pakistani garments, including a 3-piece suit

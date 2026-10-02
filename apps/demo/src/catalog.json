@@ -1,0 +1,784 @@
+[
+  {
+    "id": "firozi-lawn-3pc",
+    "gender": "women",
+    "name": {
+      "en": "Firozi Lawn 3-Piece",
+      "ur": "فیروزی لان تھری پیس"
+    },
+    "price": 4990,
+    "swatch": "#1e9e9a",
+    "layers": [
+      {
+        "id": "white-shalwar-w",
+        "slot": "bottom",
+        "image": "garments/white-shalwar-w.svg",
+        "size": [
+          448,
+          907
+        ],
+        "joints": {
+          "R.shoulder": [
+            0.1652,
+            -0.3197
+          ],
+          "L.shoulder": [
+            0.8348,
+            -0.3197
+          ],
+          "R.elbow": [
+            -0.0157,
+            -0.0081
+          ],
+          "L.elbow": [
+            1.0157,
+            -0.0081
+          ],
+          "R.wrist": [
+            -0.1354,
+            0.2701
+          ],
+          "L.wrist": [
+            1.1354,
+            0.2701
+          ],
+          "R.hip": [
+            0.2924,
+            0.1169
+          ],
+          "L.hip": [
+            0.7076,
+            0.1169
+          ],
+          "R.knee": [
+            0.2656,
+            0.5469
+          ],
+          "L.knee": [
+            0.7344,
+            0.5469
+          ],
+          "R.ankle": [
+            0.2522,
+            0.9603
+          ],
+          "L.ankle": [
+            0.7478,
+            0.9603
+          ]
+        },
+        "coverage": "ankles"
+      },
+      {
+        "id": "firozi-kameez",
+        "slot": "top",
+        "image": "garments/firozi-kameez.svg",
+        "size": [
+          624,
+          890
+        ],
+        "joints": {
+          "R.shoulder": [
+            0.2596,
+            0.0539
+          ],
+          "L.shoulder": [
+            0.7404,
+            0.0539
+          ],
+          "R.elbow": [
+            0.1297,
+            0.3715
+          ],
+          "L.elbow": [
+            0.8703,
+            0.3715
+          ],
+          "R.wrist": [
+            0.0438,
+            0.655
+          ],
+          "L.wrist": [
+            0.9562,
+            0.655
+          ],
+          "R.hip": [
+            0.351,
+            0.4989
+          ],
+          "L.hip": [
+            0.649,
+            0.4989
+          ],
+          "R.knee": [
+            0.3317,
+            0.9371
+          ],
+          "L.knee": [
+            0.6683,
+            0.9371
+          ],
+          "R.ankle": [
+            0.3221,
+            1.3584
+          ],
+          "L.ankle": [
+            0.6779,
+            1.3584
+          ]
+        },
+        "coverage": "knees"
+      },
+      {
+        "id": "firozi-dupatta",
+        "slot": "drape",
+        "image": "garments/firozi-dupatta.svg",
+        "size": [
+          390,
+          791
+        ],
+        "joints": {
+          "R.shoulder": [
+            0.1154,
+            0.1062
+          ],
+          "L.shoulder": [
+            0.8846,
+            0.1062
+          ],
+          "R.elbow": [
+            -0.0924,
+            0.4635
+          ],
+          "L.elbow": [
+            1.0924,
+            0.4635
+          ],
+          "R.wrist": [
+            -0.2299,
+            0.7825
+          ],
+          "L.wrist": [
+            1.2299,
+            0.7825
+          ],
+          "R.hip": [
+            0.2615,
+            0.6068
+          ],
+          "L.hip": [
+            0.7385,
+            0.6068
+          ],
+          "R.knee": [
+            0.2308,
+            1.0999
+          ],
+          "L.knee": [
+            0.7692,
+            1.0999
+          ],
+          "R.ankle": [
+            0.2154,
+            1.574
+          ],
+          "L.ankle": [
+            0.7846,
+            1.574
+          ]
+        },
+        "coverage": "knees",
+        "opacity": 0.88
+      }
+    ]
+  },
+  {
+    "id": "maroon-embroidered-3pc",
+    "gender": "women",
+    "name": {
+      "en": "Maroon Embroidered 3-Piece",
+      "ur": "مرون کڑھائی والا تھری پیس"
+    },
+    "price": 8450,
+    "swatch": "#6b1430",
+    "layers": [
+      {
+        "id": "maroon-trouser",
+        "slot": "bottom",
+        "image": "garments/maroon-trouser.svg",
+        "size": [
+          354,
+          907
+        ],
+        "joints": {
+          "R.shoulder": [
+            0.0763,
+            -0.3197
+          ],
+          "L.shoulder": [
+            0.9237,
+            -0.3197
+          ],
+          "R.elbow": [
+            -0.1526,
+            -0.0081
+          ],
+          "L.elbow": [
+            1.1526,
+            -0.0081
+          ],
+          "R.wrist": [
+            -0.3042,
+            0.2701
+          ],
+          "L.wrist": [
+            1.3042,
+            0.2701
+          ],
+          "R.hip": [
+            0.2373,
+            0.1169
+          ],
+          "L.hip": [
+            0.7627,
+            0.1169
+          ],
+          "R.knee": [
+            0.2034,
+            0.5469
+          ],
+          "L.knee": [
+            0.7966,
+            0.5469
+          ],
+          "R.ankle": [
+            0.1864,
+            0.9603
+          ],
+          "L.ankle": [
+            0.8136,
+            0.9603
+          ]
+        },
+        "coverage": "ankles"
+      },
+      {
+        "id": "maroon-kameez",
+        "slot": "top",
+        "image": "garments/maroon-kameez.svg",
+        "size": [
+          650,
+          923
+        ],
+        "joints": {
+          "R.shoulder": [
+            0.2692,
+            0.0585
+          ],
+          "L.shoulder": [
+            0.7308,
+            0.0585
+          ],
+          "R.elbow": [
+            0.1446,
+            0.3647
+          ],
+          "L.elbow": [
+            0.8554,
+            0.3647
+          ],
+          "R.wrist": [
+            0.062,
+            0.6381
+          ],
+          "L.wrist": [
+            0.938,
+            0.6381
+          ],
+          "R.hip": [
+            0.3569,
+            0.4875
+          ],
+          "L.hip": [
+            0.6431,
+            0.4875
+          ],
+          "R.knee": [
+            0.3385,
+            0.9101
+          ],
+          "L.knee": [
+            0.6615,
+            0.9101
+          ],
+          "R.ankle": [
+            0.3292,
+            1.3164
+          ],
+          "L.ankle": [
+            0.6708,
+            1.3164
+          ]
+        },
+        "coverage": "knees"
+      },
+      {
+        "id": "gold-dupatta",
+        "slot": "drape",
+        "image": "garments/gold-dupatta.svg",
+        "size": [
+          390,
+          791
+        ],
+        "joints": {
+          "R.shoulder": [
+            0.1154,
+            0.1062
+          ],
+          "L.shoulder": [
+            0.8846,
+            0.1062
+          ],
+          "R.elbow": [
+            -0.0924,
+            0.4635
+          ],
+          "L.elbow": [
+            1.0924,
+            0.4635
+          ],
+          "R.wrist": [
+            -0.2299,
+            0.7825
+          ],
+          "L.wrist": [
+            1.2299,
+            0.7825
+          ],
+          "R.hip": [
+            0.2615,
+            0.6068
+          ],
+          "L.hip": [
+            0.7385,
+            0.6068
+          ],
+          "R.knee": [
+            0.2308,
+            1.0999
+          ],
+          "L.knee": [
+            0.7692,
+            1.0999
+          ],
+          "R.ankle": [
+            0.2154,
+            1.574
+          ],
+          "L.ankle": [
+            0.7846,
+            1.574
+          ]
+        },
+        "coverage": "knees",
+        "opacity": 0.72
+      }
+    ]
+  },
+  {
+    "id": "white-cotton-kurta",
+    "gender": "men",
+    "name": {
+      "en": "White Cotton Kurta Shalwar",
+      "ur": "سفید کاٹن کرتا شلوار"
+    },
+    "price": 3990,
+    "swatch": "#f3f1eb",
+    "layers": [
+      {
+        "id": "white-shalwar-m",
+        "slot": "bottom",
+        "image": "garments/white-shalwar-m.svg",
+        "size": [
+          490,
+          907
+        ],
+        "joints": {
+          "R.shoulder": [
+            0.1939,
+            -0.3197
+          ],
+          "L.shoulder": [
+            0.8061,
+            -0.3197
+          ],
+          "R.elbow": [
+            0.0285,
+            -0.0081
+          ],
+          "L.elbow": [
+            0.9715,
+            -0.0081
+          ],
+          "R.wrist": [
+            -0.081,
+            0.2701
+          ],
+          "L.wrist": [
+            1.081,
+            0.2701
+          ],
+          "R.hip": [
+            0.3102,
+            0.1169
+          ],
+          "L.hip": [
+            0.6898,
+            0.1169
+          ],
+          "R.knee": [
+            0.2857,
+            0.5469
+          ],
+          "L.knee": [
+            0.7143,
+            0.5469
+          ],
+          "R.ankle": [
+            0.2735,
+            0.9603
+          ],
+          "L.ankle": [
+            0.7265,
+            0.9603
+          ]
+        },
+        "coverage": "ankles"
+      },
+      {
+        "id": "white-kurta",
+        "slot": "top",
+        "image": "garments/white-kurta.svg",
+        "size": [
+          656,
+          890
+        ],
+        "joints": {
+          "R.shoulder": [
+            0.2713,
+            0.0843
+          ],
+          "L.shoulder": [
+            0.7287,
+            0.0843
+          ],
+          "R.elbow": [
+            0.1478,
+            0.4018
+          ],
+          "L.elbow": [
+            0.8522,
+            0.4018
+          ],
+          "R.wrist": [
+            0.066,
+            0.6854
+          ],
+          "L.wrist": [
+            0.934,
+            0.6854
+          ],
+          "R.hip": [
+            0.3582,
+            0.5292
+          ],
+          "L.hip": [
+            0.6418,
+            0.5292
+          ],
+          "R.knee": [
+            0.3399,
+            0.9674
+          ],
+          "L.knee": [
+            0.6601,
+            0.9674
+          ],
+          "R.ankle": [
+            0.3308,
+            1.3888
+          ],
+          "L.ankle": [
+            0.6692,
+            1.3888
+          ]
+        },
+        "coverage": "knees"
+      }
+    ]
+  },
+  {
+    "id": "black-embroidered-kurta",
+    "gender": "men",
+    "name": {
+      "en": "Black Embroidered Kurta",
+      "ur": "سیاہ کڑھائی والا کرتا"
+    },
+    "price": 5490,
+    "swatch": "#1c1e23",
+    "layers": [
+      {
+        "id": "white-shalwar-m",
+        "slot": "bottom",
+        "image": "garments/white-shalwar-m.svg",
+        "size": [
+          490,
+          907
+        ],
+        "joints": {
+          "R.shoulder": [
+            0.1939,
+            -0.3197
+          ],
+          "L.shoulder": [
+            0.8061,
+            -0.3197
+          ],
+          "R.elbow": [
+            0.0285,
+            -0.0081
+          ],
+          "L.elbow": [
+            0.9715,
+            -0.0081
+          ],
+          "R.wrist": [
+            -0.081,
+            0.2701
+          ],
+          "L.wrist": [
+            1.081,
+            0.2701
+          ],
+          "R.hip": [
+            0.3102,
+            0.1169
+          ],
+          "L.hip": [
+            0.6898,
+            0.1169
+          ],
+          "R.knee": [
+            0.2857,
+            0.5469
+          ],
+          "L.knee": [
+            0.7143,
+            0.5469
+          ],
+          "R.ankle": [
+            0.2735,
+            0.9603
+          ],
+          "L.ankle": [
+            0.7265,
+            0.9603
+          ]
+        },
+        "coverage": "ankles"
+      },
+      {
+        "id": "black-kurta",
+        "slot": "top",
+        "image": "garments/black-kurta.svg",
+        "size": [
+          656,
+          890
+        ],
+        "joints": {
+          "R.shoulder": [
+            0.2713,
+            0.0843
+          ],
+          "L.shoulder": [
+            0.7287,
+            0.0843
+          ],
+          "R.elbow": [
+            0.1478,
+            0.4018
+          ],
+          "L.elbow": [
+            0.8522,
+            0.4018
+          ],
+          "R.wrist": [
+            0.066,
+            0.6854
+          ],
+          "L.wrist": [
+            0.934,
+            0.6854
+          ],
+          "R.hip": [
+            0.3582,
+            0.5292
+          ],
+          "L.hip": [
+            0.6418,
+            0.5292
+          ],
+          "R.knee": [
+            0.3399,
+            0.9674
+          ],
+          "L.knee": [
+            0.6601,
+            0.9674
+          ],
+          "R.ankle": [
+            0.3308,
+            1.3888
+          ],
+          "L.ankle": [
+            0.6692,
+            1.3888
+          ]
+        },
+        "coverage": "knees"
+      }
+    ]
+  },
+  {
+    "id": "beige-shalwar-kameez",
+    "gender": "men",
+    "name": {
+      "en": "Beige Shalwar Kameez",
+      "ur": "بیج شلوار قمیض"
+    },
+    "price": 4250,
+    "swatch": "#c9b38b",
+    "layers": [
+      {
+        "id": "beige-shalwar",
+        "slot": "bottom",
+        "image": "garments/beige-shalwar.svg",
+        "size": [
+          490,
+          907
+        ],
+        "joints": {
+          "R.shoulder": [
+            0.1939,
+            -0.3197
+          ],
+          "L.shoulder": [
+            0.8061,
+            -0.3197
+          ],
+          "R.elbow": [
+            0.0285,
+            -0.0081
+          ],
+          "L.elbow": [
+            0.9715,
+            -0.0081
+          ],
+          "R.wrist": [
+            -0.081,
+            0.2701
+          ],
+          "L.wrist": [
+            1.081,
+            0.2701
+          ],
+          "R.hip": [
+            0.3102,
+            0.1169
+          ],
+          "L.hip": [
+            0.6898,
+            0.1169
+          ],
+          "R.knee": [
+            0.2857,
+            0.5469
+          ],
+          "L.knee": [
+            0.7143,
+            0.5469
+          ],
+          "R.ankle": [
+            0.2735,
+            0.9603
+          ],
+          "L.ankle": [
+            0.7265,
+            0.9603
+          ]
+        },
+        "coverage": "ankles"
+      },
+      {
+        "id": "beige-kameez",
+        "slot": "top",
+        "image": "garments/beige-kameez.svg",
+        "size": [
+          656,
+          893
+        ],
+        "joints": {
+          "R.shoulder": [
+            0.2713,
+            0.0873
+          ],
+          "L.shoulder": [
+            0.7287,
+            0.0873
+          ],
+          "R.elbow": [
+            0.1478,
+            0.4038
+          ],
+          "L.elbow": [
+            0.8522,
+            0.4038
+          ],
+          "R.wrist": [
+            0.066,
+            0.6864
+          ],
+          "L.wrist": [
+            0.934,
+            0.6864
+          ],
+          "R.hip": [
+            0.3582,
+            0.5308
+          ],
+          "L.hip": [
+            0.6418,
+            0.5308
+          ],
+          "R.knee": [
+            0.3399,
+            0.9675
+          ],
+          "L.knee": [
+            0.6601,
+            0.9675
+          ],
+          "R.ankle": [
+            0.3308,
+            1.3875
+          ],
+          "L.ankle": [
+            0.6692,
+            1.3875
+          ]
+        },
+        "coverage": "knees"
+      }
+    ]
+  }
+]

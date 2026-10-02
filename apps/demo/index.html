@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0f0f10" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <title>Virtual Try-On</title>
+  </head>
+  <body>
+    <div id="app">
+      <main class="stage">
+        <div class="viewport">
+          <canvas id="view" aria-label="Camera with outfit preview"></canvas>
+          <svg class="frame-guide" viewBox="0 0 100 200" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+            <path d="M50 12a10 11 0 1 1 0 22a10 11 0 1 1 0-22M33 40h34l9 52-7 2-6-32 1 50 3 80h-11l-5-70-5 70H35l3-80 1-50-6 32-7-2z" />
+          </svg>
+          <div class="guidance" role="status" aria-live="polite" hidden></div>
+          <div class="countdown" hidden></div>
+          <div class="flash" hidden></div>
+
+          <header class="topbar">
+            <button class="chip" data-action="lang" aria-label="Language">اردو</button>
+            <div class="spacer"></div>
+            <button class="icon" data-action="stats" aria-label="Performance">
+            <svg viewBox="0 0 24 24"><path d="M4 19V9m6 10V5m6 14v-7m4 7H2" /></svg>
+            </button>
+            <button class="icon" data-action="flip" aria-label="Switch camera">
+            <svg viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3v12H4zM9 13a3 3 0 0 0 5 2m1-3a3 3 0 0 0-5-2m-1 0V8m6 8v-2" /></svg>
+            </button>
+          </header>
+          <pre class="stats" hidden></pre>
+        </div>
+
+        <section class="dock">
+          <p class="preview-note"></p>
+          <div class="products" role="listbox"></div>
+          <div class="controls">
+            <div class="group">
+              <span class="label" data-t="size"></span>
+              <div class="seg" data-group="size">
+                <button data-value="0.94">S</button><button data-value="1" aria-pressed="true">M</button><button data-value="1.06">L</button><button data-value="1.12">XL</button>
+              </div>
+            </div>
+            <button class="shutter" data-action="shoot" aria-label="Take photo"></button>
+            <div class="group">
+              <span class="label" data-t="timer"></span>
+              <div class="seg" data-group="timer">
+                <button data-value="0" aria-pressed="true" data-t="off"></button><button data-value="3">3s</button><button data-value="10">10s</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <section class="sheet start" data-screen="start">
+        <div class="sheet-body">
+          <h1 data-t="title"></h1>
+          <p class="lead" data-t="tagline"></p>
+          <p class="privacy"><svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" /></svg><span data-t="privacy"></span></p>
+          <p class="tips" data-t="tips"></p>
+          <button class="primary" data-action="start" data-t="start"></button>
+          <div class="loading" hidden><div class="spinner"></div><div><b data-t="loading"></b><br /><small data-t="loadingFirst"></small></div></div>
+          <p class="error" hidden></p>
+        </div>
+      </section>
+
+      <section class="sheet result" data-screen="result" hidden>
+        <div class="sheet-body">
+          <img alt="" />
+          <div class="row">
+            <button class="primary" data-action="share" data-t="share"></button>
+            <button class="secondary" data-action="download" data-t="download"></button>
+            <button class="secondary" data-action="close-result" data-t="close"></button>
+          </div>
+        </div>
+      </section>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
