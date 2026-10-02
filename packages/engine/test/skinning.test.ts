@@ -90,3 +90,22 @@ describe('SkinnedMesh with arms close to the body (model photo)', () => {
     expect(out[0]).toBeLessThan(sh.x - 100);
   });
 });
+
+describe('SkinnedMesh with a dupatta hanging beside the arm', () => {
+  it('keeps fabric far from the arm hanging when the arm is raised', () => {
+    const photo = mannequin();
+    const pj = photo.joints;
+    // A dupatta pixel well outside the forearm (0.6 shoulder widths away).
+    const dupatta = { x: pj['R.elbow'].x - 0.6 * photo.scale, y: pj['R.elbow'].y + 40 };
+    const sleevePx = { x: (pj['R.elbow'].x + pj['R.wrist'].x) / 2, y: (pj['R.elbow'].y + pj['R.wrist'].y) / 2 };
+    const mesh = new SkinnedMesh(pj, TOP_BONES, new Float32Array([dupatta.x, dupatta.y, sleevePx.x, sleevePx.y]));
+    const s = structuredClone(photo);
+    const sh = s.joints['R.shoulder'];
+    s.joints['R.elbow'] = { x: sh.x - 290, y: sh.y };
+    s.joints['R.wrist'] = { x: sh.x - 545, y: sh.y };
+    const out = new Float32Array(4);
+    mesh.apply(s, out);
+    expect(Math.hypot(out[0] - dupatta.x, out[1] - dupatta.y)).toBeLessThan(5); // dupatta stays
+    expect(out[3]).toBeLessThan(sh.y + 40); // sleeve still follows the arm
+  });
+});

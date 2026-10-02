@@ -36,3 +36,17 @@
 - Real Shopify and WooCommerce test stores (needs your accounts).
 - Phone measurements from Phase 1 are still pending.
 - Studio output on real brand photos: needs a few sample photos in `datasets/` (kept out of git).
+
+## Real-photo testing (after Phase 2)
+| Test | Result |
+|---|---|
+| Import of 375 real photos (298 Pakistani catalogue photos, internal only; 76 CC-licensed Openverse photos; 1 sample) | 257 ready, 116 skipped (unstitched fabric / no person), 0 failed; person detected in 100% of usable photos |
+| Real garments in the live try-on on a standing person (portrait phone camera) | Garments sit on torso and shoulders, sleeves follow arms, dupattas hang; prints and embroidery stay sharp |
+
+Fixes made from real photos: skin carved out and hand holes filled with fabric colour; stray fragments removed; conservative kameez/shalwar split; dupattas beside the arm no longer fly with a raised arm (arm bones only move sleeve pixels); a broken layer is skipped instead of failing the try-on; full imports rewrite the store catalog.
+
+Open issues:
+- Automatic kameez/shalwar split triggers rarely (~3%), so most outfits are one layer; the shalwar won't follow leg movement.
+- Hand patches on printed fabric become soft solid colour (needs AI inpainting).
+- Garment sleeves shorter than the shopper's own sleeves let the shopper's clothes show at the wrist.
+- No hand-labelled photos yet for a hem-accuracy number (needs a free Roboflow API key).

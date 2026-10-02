@@ -69,6 +69,13 @@ const COLUMN_AT_SHOULDER = 0.36;
 const COLUMN_BELOW_ARMPIT = 0.62;
 const ARMPIT_T = 0.3; // fraction of shoulder→hip
 const ARM_CLEARANCE = 0.14; // keep the column this far inside the arm's centre line
+/**
+ * Arm bones also only reach pixels close to the arm (the sleeve). Fabric hanging further out,
+ * e.g. a dupatta draped beside the arm in a model photo, follows the torso instead of flying
+ * up with a raised arm. Full influence within SLEEVE_NEAR, none beyond SLEEVE_FAR (shoulder widths).
+ */
+const SLEEVE_NEAR = 0.24;
+const SLEEVE_FAR = 0.38;
 
 /** x of a polyline at height y (null if y is outside its vertical range). */
 function polylineXAt(points: Vec2[], y: number): number | null {
@@ -214,6 +221,7 @@ export class SkinnedMesh {
     const sw = this.sourceScale;
     const d = new Float64Array(bones.length);
     const isArm = bones.map((b) => b.endsWith('Arm') || b.endsWith('forearm'));
+    const armSide = bones.map((b) => (b.startsWith('R') ? 0 : 1));
     const arms = (['R', 'L'] as const).map((side) => [joints[`${side}.shoulder`], joints[`${side}.elbow`], joints[`${side}.wrist`]]);
     const armMask = (p: Vec2): number => {
       const t = (p.y - tf.sm.y) / (tf.hm.y - tf.sm.y || 1);
@@ -232,7 +240,11 @@ export class SkinnedMesh {
         d[i] = Math.max(0, segmentDistance(p, seg[0], seg[1]) / sw - RADIUS[bones[i]]);
       }
       const mask = armMask(p);
-      const raw = [...d].map((di, i) => (isArm[i] ? mask : 1) / Math.pow(di + SOFTNESS, FALLOFF_POWER));
+      const near = arms.map((a) => {
+        const dist = Math.min(segmentDistance(p, a[0], a[1]), segmentDistance(p, a[1], a[2])) / sw;
+        return 1 - smoothstep(SLEEVE_NEAR, SLEEVE_FAR, dist);
+      });
+      const raw = [...d].map((di, i) => (isArm[i] ? mask * near[armSide[i]] : 1) / Math.pow(di + SOFTNESS, FALLOFF_POWER));
       // Keep the strongest bones.
       const order = [...raw.keys()].sort((a, b) => raw[b] - raw[a]).slice(0, MAX_INFLUENCES);
       let total = 0;

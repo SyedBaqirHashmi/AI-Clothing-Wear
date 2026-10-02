@@ -273,7 +273,8 @@ async function run(): Promise<{ products: number; ready: number; failed: number 
     }
   }
   for (const [store, products] of byStore) {
-    const res = await fetch(`/__datasets/catalog?store=${encodeURIComponent(store)}`, { method: 'POST', body: JSON.stringify(products) });
+    const replace = limit === Infinity ? '&replace=1' : '';
+    const res = await fetch(`/__datasets/catalog?store=${encodeURIComponent(store)}${replace}`, { method: 'POST', body: JSON.stringify(products) });
     log(`Catalog ${store}: ${res.ok ? 'saved' : 'FAILED'} (apps/widget/public/catalog/${store}.json)`);
   }
   await fetch('/__datasets/report', { method: 'POST', body: reportHtml(rows) });

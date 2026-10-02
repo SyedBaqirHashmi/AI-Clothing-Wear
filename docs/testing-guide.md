@@ -62,6 +62,9 @@ ROBOFLOW_API_KEY=… npm run datasets -- --roboflow
 npm run import                               # → datasets/report.html with accuracy figures
 ```
 `npm run import -- --store <folder> --limit 40` processes a subset for quick tuning rounds.
+`npm run e2e:real -- <store> 9 --person <photo.jpg>` renders imported garments through the live try-on on a portrait "phone camera" made from any standing-person photo (we use a CC BY 2.0 photo by Linda N. on Flickr from the Openverse set).
+
+**Results so far (Oct 2026):** 375 photos → 257 garments ready, 116 skipped (unstitched fabric or no person), 0 failures; person detected in 100% of usable photos. Real outfits worn by a standing person look convincing. See `docs/qa/phase2.md`.
 
 Every photo is saved with its licence and author (`source.json`). Photos are never scraped from search engines or shops: a picture being visible online doesn't make it free to use.
 

@@ -79,7 +79,9 @@ function datasetsBridge(): Plugin {
             if (!slugOk(store) || store === 'demo') return send(400, { error: 'bad store' });
             const file = inside(WIDGET_PUBLIC, `catalog/${store}.json`);
             const incoming = JSON.parse((await readBody(req)).toString('utf8')) as { id: string }[];
-            const existing = existsSync(file) ? (JSON.parse(readFileSync(file, 'utf8')) as { id: string }[]) : [];
+            // Full imports replace the catalog; partial (--limit) imports merge into it.
+            const existing =
+              existsSync(file) && url.searchParams.get('replace') !== '1' ? (JSON.parse(readFileSync(file, 'utf8')) as { id: string }[]) : [];
             const merged = [...existing.filter((p) => !incoming.some((q) => q.id === p.id)), ...incoming];
             mkdirSync(dirname(file), { recursive: true });
             writeFileSync(file, JSON.stringify(merged, null, 2) + '\n');

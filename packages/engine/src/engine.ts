@@ -151,8 +151,15 @@ export class TryOnEngine {
       return;
     }
     const layers = [...outfit.layers].sort((a, b) => SLOT_ORDER.indexOf(a.slot) - SLOT_ORDER.indexOf(b.slot));
-    const garments = await Promise.all(layers.map(async (spec) => new Garment(spec, await loadGarmentImage(spec))));
+    // A broken layer (missing image, bad joints) is skipped, so the rest of the outfit still shows.
+    const results = await Promise.allSettled(layers.map(async (spec) => new Garment(spec, await loadGarmentImage(spec))));
+    const garments: Garment[] = [];
+    results.forEach((r, i) => {
+      if (r.status === 'fulfilled') garments.push(r.value);
+      else this.onError(`garment ${layers[i].id} skipped: ${r.reason instanceof Error ? r.reason.message : String(r.reason)}`);
+    });
     if (token !== this.outfitToken) return; // a newer outfit was selected meanwhile
+    if (!garments.length && layers.length) throw new Error('none of the outfit layers could be loaded');
     this.garments = garments;
     this.renderer.retain(garments);
   }
