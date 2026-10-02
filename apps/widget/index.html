@@ -18,8 +18,12 @@
           <div class="guidance" role="status" aria-live="polite" hidden></div>
           <div class="countdown" hidden></div>
           <div class="flash" hidden></div>
+          <div class="toast" role="status" aria-live="polite" hidden></div>
 
           <header class="topbar">
+            <button class="icon" data-action="close" aria-label="Close" hidden>
+            <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></svg>
+            </button>
             <button class="chip" data-action="lang" aria-label="Language">اردو</button>
             <div class="spacer"></div>
             <button class="icon" data-action="stats" aria-label="Performance">
@@ -50,11 +54,15 @@
               </div>
             </div>
           </div>
+          <button class="primary cart" data-action="cart" hidden></button>
         </section>
       </main>
 
       <section class="sheet start" data-screen="start">
         <div class="sheet-body">
+          <button class="icon sheet-close" data-action="close" aria-label="Close" hidden>
+            <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
           <h1 data-t="title"></h1>
           <p class="lead" data-t="tagline"></p>
           <p class="privacy"><svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" /></svg><span data-t="privacy"></span></p>
@@ -72,6 +80,9 @@
             <button class="primary" data-action="share" data-t="share"></button>
             <button class="secondary" data-action="download" data-t="download"></button>
             <button class="secondary" data-action="close-result" data-t="close"></button>
+          </div>
+          <div class="row-single">
+            <button class="primary cart" data-action="cart" hidden></button>
           </div>
         </div>
       </section>

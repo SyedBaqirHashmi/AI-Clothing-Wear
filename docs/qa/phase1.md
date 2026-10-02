@@ -11,7 +11,7 @@
 | WebGL2 renderer: mirrored video, layered garments, lighting/exposure/tint matching | Done | `render/renderer.ts` |
 | Adaptive quality (tracker input 640 → 320 px when tracking < 20 Hz) | Done | `engine.ts` |
 | Guidance (step back / closer / show knees / face the light) + upper-body mode | Done | `guidance.ts` |
-| Demo: 5 outfits (2 women's 3-piece suits, 2 kurtas, 1 shalwar kameez), sizes S–XL, timer, snapshot, WhatsApp share, EN/UR, performance panel | Done | `apps/demo` |
+| Demo: 5 outfits (2 women's 3-piece suits, 2 kurtas, 1 shalwar kameez), sizes S–XL, timer, snapshot, WhatsApp share, EN/UR, performance panel | Done | `apps/widget` |
 | Unit tests (15) | Passing | `packages/engine/test` |
 | End-to-end test (fake 720p camera with a real person, 7 runs incl. fallback and Urdu) | Passing | `tests/e2e/run.mjs` |
 

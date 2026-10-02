@@ -1,6 +1,7 @@
 node_modules/
 dist/
-apps/demo/public/mediapipe/
+apps/widget/public/mediapipe/
 test-results/
 *.y4m
 datasets/
+apps/studio/public/mediapipe/

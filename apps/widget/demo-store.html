@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Demo Store · Firozi Lawn 3-Piece</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <style>
+      /* A plain product page standing in for a Shopify/WooCommerce store. */
+      body { margin: 0; font-family: Georgia, serif; background: #faf7f2; color: #222; }
+      header { padding: 16px 20px; border-bottom: 1px solid #e6dfd3; font-size: 22px; letter-spacing: 0.08em; text-transform: uppercase; }
+      main { max-width: 980px; margin: 0 auto; padding: 24px 16px; display: grid; gap: 28px; grid-template-columns: 1fr; }
+      @media (min-width: 760px) { main { grid-template-columns: 1fr 1fr; } }
+      .photo { background: #efe8dc; border-radius: 6px; display: grid; place-items: center; aspect-ratio: 3/4; }
+      .photo img { max-height: 90%; max-width: 80%; }
+      h1 { font-weight: 400; margin: 0 0 8px; }
+      .price { font-size: 20px; margin-bottom: 20px; }
+      label { display: block; margin: 14px 0 6px; font-family: system-ui, sans-serif; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; }
+      select { font-size: 16px; padding: 8px; min-width: 120px; }
+      .buttons { display: grid; gap: 10px; margin-top: 22px; }
+      .btn { font: 600 16px system-ui, sans-serif; padding: 14px; border-radius: 4px; border: 1px solid #222; cursor: pointer; }
+      .add { background: #222; color: #fff; }
+      .tryon { background: #fff; color: #222; display: flex; justify-content: center; gap: 8px; align-items: center; }
+      #cart-count { font-family: system-ui, sans-serif; font-size: 14px; color: #555; }
+    </style>
+  </head>
+  <body>
+    <header>Demo Store <span id="cart-count" style="float: right">Cart: 0</span></header>
+    <main>
+      <div class="photo"><img src="./garments/firozi-kameez.svg" alt="Firozi Lawn 3-Piece" /></div>
+      <div>
+        <h1>Firozi Lawn 3-Piece</h1>
+        <div class="price">Rs 4,990</div>
+        <label for="size">Size</label>
+        <select id="size"><option>S</option><option selected>M</option><option>L</option><option>XL</option></select>
+        <div class="buttons">
+          <button class="btn add" id="add">Add to cart</button>
+          <!-- 1. The try-on button: any element with data-tryon-product. -->
+          <button class="btn tryon" data-tryon-product="firozi-lawn-3pc">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h3l2-3h6l2 3h3v12H4z" /><circle cx="12" cy="13" r="3.5" /></svg>
+            Try it on
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- 2. The loader script, exactly as a store adds it (served next to the widget). -->
+    <script src="./tryon.js" data-store="demo" async></script>
+    <script type="module">
+      // 3. Optional: let the widget's "Add to cart" use the store's own cart.
+      let count = 0;
+      const addToCart = (size) => {
+        document.getElementById('size').value = size;
+        count++;
+        document.getElementById('cart-count').textContent = `Cart: ${count}`;
+        return true;
+      };
+      document.getElementById('add').onclick = () => addToCart(document.getElementById('size').value);
+      const ready = () => {
+        window.TryOn.onAddToCart = async ({ size }) => addToCart(size);
+      };
+      window.TryOn ? ready() : document.querySelector('script[data-store]').addEventListener('load', ready);
+    </script>
+  </body>
+</html>

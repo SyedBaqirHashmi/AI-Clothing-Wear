@@ -1,4 +1,5 @@
-# Publishes the demo to GitHub Pages (https), so it can be opened on any phone.
+# Publishes the widget, demo store (/demo-store.html) and Garment Studio (/studio/) to
+# GitHub Pages (https), so they can be opened on any phone.
 # One-time setup: repository Settings → Pages → Source: "GitHub Actions".
 name: Deploy demo
 
@@ -30,8 +31,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      - name: Studio under /studio/
+        run: cp -r apps/studio/dist apps/widget/dist/studio
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: apps/demo/dist
+          path: apps/widget/dist
       - id: deployment
         uses: actions/deploy-pages@v4

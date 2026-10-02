@@ -4,12 +4,16 @@ import { Garment, loadGarmentImage } from './garment.ts';
 import { GuidanceTracker } from './guidance.ts';
 import type { Delegate, ModelVariant } from './pose/backend.ts';
 import { PoseTracker } from './pose/tracker.ts';
+import { MEDIAPIPE_VERSION } from './version.ts';
 import { Renderer } from './render/renderer.ts';
 import { SLOT_ORDER, type Coverage, type EngineStats, type Fit, type Guidance, type OutfitSpec } from './types.ts';
 
 export interface EngineOptions {
   canvas: HTMLCanvasElement;
-  /** Folder that contains `wasm/` and `models/` (self-hosted MediaPipe files). */
+  /**
+   * Folder with the self-hosted MediaPipe files, laid out as `<version>/wasm/` and
+   * `<version>/models/` (see scripts/fetch-assets.mjs).
+   */
   assetBase: string;
   model?: ModelVariant;
   delegate?: Delegate;
@@ -43,6 +47,7 @@ export class TryOnEngine {
   private outfitToken = 0;
   private fit: Fit = { width: 1, length: 1 };
   private facing: Facing = 'user';
+  private mirror = true;
   private running = false;
   private frameHandle = 0;
   private lastVideoTime = -1;
@@ -77,7 +82,7 @@ export class TryOnEngine {
   /** Create the engine and load the tracking model (the slow part on first visit). */
   static async create(opts: EngineOptions): Promise<TryOnEngine> {
     const engine = new TryOnEngine(opts);
-    const base = new URL(opts.assetBase.replace(/\/?$/, '/'), location.href);
+    const base = new URL(`${opts.assetBase.replace(/\/?$/, '/')}${MEDIAPIPE_VERSION}/`, location.href);
     const model = opts.model ?? 'lite';
     await engine.tracker.init(
       {
@@ -105,7 +110,28 @@ export class TryOnEngine {
     this.stopLoop();
     closeCamera(this.video);
     this.facing = facing;
+    this.mirror = facing === 'user';
     await openCamera(this.video, facing);
+    this.startLoop();
+  }
+
+  /**
+   * Use any video stream instead of the camera, e.g. a canvas stream of a still photo
+   * (Garment Studio preview) or a recorded clip. Not mirrored by default.
+   */
+  async startStream(stream: MediaStream, mirror = false): Promise<void> {
+    this.stopLoop();
+    closeCamera(this.video);
+    this.mirror = mirror;
+    this.video.srcObject = stream;
+    await this.video.play();
+    if (!this.video.videoWidth) {
+      await new Promise<void>((resolve) => this.video.addEventListener('loadedmetadata', () => resolve(), { once: true }));
+    }
+    this.startLoop();
+  }
+
+  private startLoop(): void {
     this.body.reset();
     this.running = true;
     this.scheduleFrame();
@@ -188,7 +214,7 @@ export class TryOnEngine {
 
     try {
       this.renderer.render(this.video, visible, {
-        mirror: this.facing === 'user',
+        mirror: this.mirror,
         shade: 0.35,
         ambient: 0.6,
       });

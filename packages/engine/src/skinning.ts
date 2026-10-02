@@ -58,14 +58,29 @@ const RADIUS: Record<BoneName, number> = {
 };
 
 /**
- * Garment images show the wearer front-on with arms slightly out, so sleeves always lie outside
- * the torso column. Arm bones may only move pixels outside it; otherwise a raised arm would drag
+ * Garment images show the wearer front-on with the arms beside the body, so sleeves lie outside
+ * a "torso column". Arm bones may only move pixels outside it; otherwise a raised arm would drag
  * the kameez skirt pixels that happen to sit next to the hanging sleeve.
- * Column half-width in shoulder widths: narrow at the shoulder cap, full width from the armpit.
+ * The column is narrow at the shoulder cap and widens to full width at the armpit, but never
+ * reaches into the arm itself: in model photos the arms often hang close to the body.
+ * Values in shoulder widths.
  */
 const COLUMN_AT_SHOULDER = 0.36;
 const COLUMN_BELOW_ARMPIT = 0.62;
 const ARMPIT_T = 0.3; // fraction of shoulder→hip
+const ARM_CLEARANCE = 0.14; // keep the column this far inside the arm's centre line
+
+/** x of a polyline at height y (null if y is outside its vertical range). */
+function polylineXAt(points: Vec2[], y: number): number | null {
+  for (let i = 0; i < points.length - 1; i++) {
+    const a = points[i];
+    const b = points[i + 1];
+    const lo = Math.min(a.y, b.y);
+    const hi = Math.max(a.y, b.y);
+    if (y >= lo && y <= hi && hi > lo) return a.x + ((y - a.y) / (b.y - a.y)) * (b.x - a.x);
+  }
+  return null;
+}
 
 function smoothstep(a: number, b: number, x: number): number {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
@@ -199,10 +214,14 @@ export class SkinnedMesh {
     const sw = this.sourceScale;
     const d = new Float64Array(bones.length);
     const isArm = bones.map((b) => b.endsWith('Arm') || b.endsWith('forearm'));
+    const arms = (['R', 'L'] as const).map((side) => [joints[`${side}.shoulder`], joints[`${side}.elbow`], joints[`${side}.wrist`]]);
     const armMask = (p: Vec2): number => {
       const t = (p.y - tf.sm.y) / (tf.hm.y - tf.sm.y || 1);
       const cx = tf.sm.x + (tf.hm.x - tf.sm.x) * Math.min(1, Math.max(0, t));
-      const half = (COLUMN_AT_SHOULDER + (COLUMN_BELOW_ARMPIT - COLUMN_AT_SHOULDER) * Math.min(1, Math.max(0, t / ARMPIT_T))) * sw;
+      let half = (COLUMN_AT_SHOULDER + (COLUMN_BELOW_ARMPIT - COLUMN_AT_SHOULDER) * Math.min(1, Math.max(0, t / ARMPIT_T))) * sw;
+      // Arm on this pixel's side of the body (image-left = wearer's right).
+      const armX = polylineXAt(arms[p.x < cx ? 0 : 1], p.y);
+      if (armX !== null) half = Math.min(half, Math.max(COLUMN_AT_SHOULDER * sw, Math.abs(armX - cx) - ARM_CLEARANCE * sw));
       return smoothstep(half - 0.03 * sw, half + 0.05 * sw, Math.abs(p.x - cx));
     };
     for (let v = 0; v < this.vertexCount; v++) {

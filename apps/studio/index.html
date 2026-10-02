@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f0f10'/%3E%3Cpath d='M11 6l5 3 5-3 6 4-2 6-3-1v11H10V15l-3 1-2-6z' fill='%23d9b25a'/%3E%3C/svg%3E" />
+    <title>Garment Studio</title>
+  </head>
+  <body>
+    <header class="bar">
+      <b>Garment Studio</b>
+      <span class="muted">Turn a product photo into a try-on garment</span>
+      <span class="spacer"></span>
+      <span class="status" role="status" aria-live="polite"></span>
+    </header>
+    <main class="layout">
+      <section class="canvas-wrap">
+        <canvas id="work" aria-label="Garment editor"></canvas>
+        <div class="empty">
+          <p><b>Drop a product photo here</b> or choose one on the right.</p>
+          <p class="muted">Best: the garment worn by a model standing straight and facing the camera, arms slightly away from the body, plain background. See docs/garment-guidelines.md.</p>
+        </div>
+      </section>
+
+      <aside class="panel">
+        <section>
+          <h2>1. Photo</h2>
+          <input type="file" id="photo" accept="image/*" />
+          <div class="radio">
+            <label><input type="radio" name="kind" value="model" checked /> Worn by a model</label>
+            <label><input type="radio" name="kind" value="plain" /> Plain background (flat-lay)</label>
+          </div>
+          <label class="check"><input type="checkbox" id="fill" checked /> Fill gaps (hair, hands over the garment)</label>
+          <label class="check"><input type="checkbox" id="accessories" /> Keep accessories</label>
+          <button class="primary" data-action="cutout" disabled>Cut out garment</button>
+        </section>
+
+        <section>
+          <h2>2. Layer</h2>
+          <label>Type
+            <select id="slot">
+              <option value="top">Top: kameez / kurta / shirt</option>
+              <option value="bottom">Bottom: shalwar / trouser</option>
+              <option value="drape">Drape: dupatta / shawl</option>
+              <option value="outer">Outer: waistcoat / jacket</option>
+            </select>
+          </label>
+          <label>Keep
+            <select id="keep">
+              <option value="all">Whole cut-out</option>
+              <option value="above">Above the line (e.g. kameez only)</option>
+              <option value="below">Below the line (e.g. shalwar only)</option>
+            </select>
+          </label>
+          <label>Opacity <input type="range" id="opacity" min="0.4" max="1" step="0.05" value="1" /></label>
+          <p class="muted">Drag the yellow dots to the wearer's joints. Drag the dashed line to split a suit.</p>
+          <label class="check"><input type="checkbox" id="original" /> Show original photo</label>
+        </section>
+
+        <section>
+          <h2>3. Product</h2>
+          <label>Product id <input id="pid" placeholder="e.g. firozi-lawn-3pc" /></label>
+          <label>Section
+            <select id="gender"><option value="women">Women</option><option value="men">Men</option></select>
+          </label>
+          <label>Name (English) <input id="name-en" /></label>
+          <label>Name (Urdu) <input id="name-ur" dir="rtl" /></label>
+          <label>Price (PKR) <input id="price" type="number" min="0" step="10" /></label>
+          <button data-action="add-layer" disabled>Add layer to product</button>
+          <ul class="layers"></ul>
+          <div class="row">
+            <button class="primary" data-action="preview" disabled>Preview try-on</button>
+            <button data-action="download" disabled>Download</button>
+          </div>
+        </section>
+      </aside>
+    </main>
+
+    <dialog class="preview">
+      <div class="preview-bar">
+        <b>Try-on preview</b>
+        <span class="spacer"></span>
+        <button data-action="preview-photo">On this photo</button>
+        <label class="button">Other photo… <input type="file" id="preview-file" accept="image/*" hidden /></label>
+        <button data-action="preview-camera">Webcam</button>
+        <button data-action="preview-close">Close</button>
+      </div>
+      <canvas id="preview-canvas"></canvas>
+      <pre class="preview-stats"></pre>
+    </dialog>
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

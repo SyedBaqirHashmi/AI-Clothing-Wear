@@ -19,7 +19,7 @@
 |---|---|
 | Type check + lint + format | `tsc`, ESLint, Prettier; `ruff` + `mypy` for Python |
 | Unit tests | Vitest (smoothing filter, skinning, body model, anchor expressions); pytest (API) |
-| End-to-end | Playwright + Chromium with a **fake camera fed from a recorded video of a person**; asserts the model loads, the pose is detected, the garment is drawn, and no errors occur |
+| End-to-end | Playwright + Chromium with a **fake camera fed from a recorded video of a person**: all outfits, fallbacks, Urdu, the embedded store flow (`npm run e2e`); Garment Studio pipeline (`e2e:studio`); Shopify/WooCommerce cart hand-off (`e2e:integrations`); download budgets on the production build (`e2e:caching`) |
 | Visual regression | Screenshot of fixed frames compared to a baseline (catches warp and rendering bugs) |
 | Bundle size budget | Fails if the widget or engine grows past its budget (section 2.3, N-07/N-08) |
 

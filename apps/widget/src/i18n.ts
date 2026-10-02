@@ -31,6 +31,10 @@ const en = {
   copyLink: 'Copy link',
   copied: 'Link copied',
   retry: 'Try again',
+  addToCart: 'Add to cart',
+  added: 'Added to cart',
+  addFailed: 'Could not add to cart. Please try from the product page.',
+  catalogError: 'This product is not available for try-on yet.',
   guidance: {
     starting: 'Starting camera…',
     'no-person': 'Step into the frame',
@@ -73,6 +77,10 @@ const ur: typeof en = {
   copyLink: 'لنک کاپی کریں',
   copied: 'لنک کاپی ہو گیا',
   retry: 'دوبارہ کوشش کریں',
+  addToCart: 'کارٹ میں ڈالیں',
+  added: 'کارٹ میں ڈال دیا گیا',
+  addFailed: 'کارٹ میں نہیں ڈالا جا سکا۔ پروڈکٹ پیج سے کوشش کریں۔',
+  catalogError: 'یہ پروڈکٹ ابھی ٹرائی آن کے لیے دستیاب نہیں۔',
   guidance: {
     starting: 'کیمرہ شروع ہو رہا ہے…',
     'no-person': 'فریم میں آئیں',

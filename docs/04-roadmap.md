@@ -25,11 +25,13 @@ Durations assume one full-time developer working with Claude. Each phase ends wi
 **Exit (measured on real phones):** 720p at ≥ 30 fps on Tier A/B, ≥ 24 fps on Tier C; jitter and latency within the section 2.3 targets; 10 non-technical testers say the garment "stays on me".
 
 ## Phase 2 — Widget + garment tooling (3 weeks)
+**Status:** built and passing automated tests; real Shopify/WooCommerce test stores and 4G load measurement pending (see `docs/qa/phase2.md`).
+
 - Embeddable widget (iframe + `<script>` loader), privacy notice, EN/UR + right-to-left
 - Snapshot + countdown + WhatsApp share
 - Service worker caching; first-load and repeat-load budgets met
-- Internal rig editor (drag keypoints on a garment image) + preview
-- Background-removal script for store images
+- Garment Studio: AI clothes cut-out from model photos, automatic joints, joint editor, suit splitting, preview, export
+- Background removal for plain-background (flat-lay) photos
 
 **Exit:** widget embedded on a test Shopify store and a test WooCommerce store; load budgets met on 4G.
 

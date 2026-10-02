@@ -1,0 +1,54 @@
+{%- comment -%}
+  Virtual Try-On button for Shopify themes (Online Store 2.0, e.g. Dawn).
+
+  Install: Online Store → Themes → Edit code → Snippets → Add "tryon.liquid" with this file,
+  then add this line inside the product form section (e.g. sections/main-product.liquid,
+  below the buy buttons):
+
+      {% render 'tryon', product: product %}
+
+  Set the two values below. The product handle must match the product id in the try-on catalog.
+{%- endcomment -%}
+{%- assign tryon_host = 'https://YOUR-TRYON-HOST' -%}
+{%- assign tryon_store = 'YOUR-STORE-ID' -%}
+
+<button type="button" class="button button--secondary button--full-width tryon-button" data-tryon-product="{{ product.handle | escape }}" style="margin-top: 1rem">
+  {%- if request.locale.iso_code == 'ur' -%}پہن کر دیکھیں{%- else -%}Try it on{%- endif -%}
+</button>
+<script src="{{ tryon_host }}/tryon.js" data-store="{{ tryon_store | escape }}" data-lang="{{ request.locale.iso_code }}" async></script>
+<script>
+  (function () {
+    var variants = {{ product.variants | json }};
+    var SIZE_NAMES = { S: ['s', 'small'], M: ['m', 'medium'], L: ['l', 'large'], XL: ['xl', 'x-large', 'extra large'] };
+
+    function variantFor(size) {
+      var names = SIZE_NAMES[size] || [String(size).toLowerCase()];
+      var matches = function (v) {
+        return v.options.some(function (o) { return names.indexOf(String(o).trim().toLowerCase()) !== -1; });
+      };
+      return (
+        variants.find(function (v) { return v.available && matches(v); }) ||
+        (variants.length === 1 && variants[0].available ? variants[0] : null)
+      );
+    }
+
+    function setup() {
+      window.TryOn.onAddToCart = function (detail) {
+        var v = variantFor(detail.size);
+        if (!v) return false;
+        return fetch('{{ routes.cart_add_url }}.js', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({ items: [{ id: v.id, quantity: 1 }] }),
+        }).then(function (r) {
+          // Themes can listen for this to refresh their cart drawer / count.
+          if (r.ok) document.dispatchEvent(new CustomEvent('tryon:cart-updated', { detail: { variant: v.id } }));
+          return r.ok;
+        });
+      };
+    }
+
+    if (window.TryOn) setup();
+    else document.querySelector('script[src$="/tryon.js"]').addEventListener('load', setup);
+  })();
+</script>

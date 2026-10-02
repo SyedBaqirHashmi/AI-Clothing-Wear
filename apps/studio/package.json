@@ -1,0 +1,17 @@
+{
+  "name": "@tryon/studio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "assets": "node ../../scripts/fetch-assets.mjs public/mediapipe --segmenter",
+    "predev": "npm run assets",
+    "dev": "vite --host",
+    "prebuild": "npm run assets",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@mediapipe/tasks-vision": "1.0.1",
+    "@tryon/engine": "0.1.0"
+  }
+}

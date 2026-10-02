@@ -64,10 +64,15 @@ const videoPath = join(out, 'camera.mjpeg');
 
 // 2. Dev server.
 const server = spawn('npx', ['vite', '--port', String(PORT), '--strictPort'], {
-  cwd: join(root, 'apps/demo'),
-  stdio: ['ignore', 'pipe', 'pipe'],
+  cwd: join(root, 'apps/widget'),
+  stdio: 'ignore',
+  detached: true,
 });
-const stopServer = () => server.kill('SIGTERM');
+const stopServer = () => {
+  try {
+    process.kill(-server.pid, 'SIGTERM');
+  } catch {}
+};
 process.on('exit', stopServer);
 for (let i = 0; ; i++) {
   try {
@@ -89,7 +94,7 @@ const browser = await chromium.launch({
   ],
 });
 
-const catalog = JSON.parse((await import('node:fs')).readFileSync(join(root, 'apps/demo/src/catalog.json'), 'utf8'));
+const catalog = JSON.parse((await import('node:fs')).readFileSync(join(root, 'apps/widget/public/catalog/demo.json'), 'utf8'));
 const runs = [
   ...catalog.map((c) => ({ name: c.id, query: `outfit=${c.id}` })),
   { name: 'main-thread-fallback', query: `outfit=${catalog[0].id}&worker=0` },
@@ -122,6 +127,48 @@ for (const run of runs) {
   const ok = !!stats && stats.videoWidth === 1280 && stats.videoHeight === 720 && errors.length === 0;
   if (!ok) failed = true;
   results.push({ run: run.name, ok, stats, guidance, errors: errors.slice(0, 3), note });
+  await page.close();
+}
+
+// 4. Embedded in a store page: open from the product page, add to cart, close.
+{
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  const errors = [];
+  await page.route('https://fonts.googleapis.com/**', (r) => r.fulfill({ status: 200, contentType: 'text/css', body: '' }));
+  page.on('pageerror', (e) => errors.push(String(e)));
+  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  const checks = {};
+  await page.goto(`${BASE}demo-store.html`);
+  await page.waitForFunction(() => !!window.TryOn);
+  await page.click('[data-tryon-product]');
+  const frameEl = await page.waitForSelector('iframe[title="Virtual try-on"]');
+  const frame = await frameEl.contentFrame();
+  checks.iframeAllowsCamera = (await frameEl.getAttribute('allow')).includes('camera');
+  await frame.waitForSelector('[data-action="start"]:not([disabled])');
+  await frame.click('[data-action="start"]');
+  await frame.waitForFunction(() => (window.__tryonStats?.trackHz ?? 0) > 0, null, { timeout: 90000 });
+  checks.closeButtonShown = await frame.isVisible('.topbar [data-action="close"]');
+  await frame.click('[data-group="size"] button:nth-child(3)'); // L
+  await frame.click('.dock [data-action="cart"]');
+  await frame.waitForSelector('.toast:not([hidden])');
+  checks.toast = await frame.textContent('.toast');
+  checks.storeCart = await page.textContent('#cart-count');
+  checks.storeSize = await page.inputValue('#size');
+  await page.screenshot({ path: join(out, 'embed-mobile.png') });
+  await frame.click('.topbar [data-action="close"]');
+  await page.waitForSelector('iframe[title="Virtual try-on"]', { state: 'detached' });
+  checks.closed = true;
+  // Phone back button closes the try-on instead of leaving the page.
+  await page.click('[data-tryon-product]');
+  await page.waitForSelector('iframe[title="Virtual try-on"]');
+  await page.goBack();
+  await page.waitForSelector('iframe[title="Virtual try-on"]', { state: 'detached' });
+  checks.backButtonCloses = page.url().endsWith('demo-store.html');
+  const ok =
+    checks.iframeAllowsCamera && checks.closeButtonShown && checks.toast?.includes('Added') && checks.storeCart === 'Cart: 1' &&
+    checks.storeSize === 'L' && checks.backButtonCloses && errors.length === 0;
+  if (!ok) failed = true;
+  results.push({ run: 'embed-store-mobile', ok, stats: null, guidance: '', errors: errors.slice(0, 3), note: JSON.stringify(checks) });
   await page.close();
 }
 

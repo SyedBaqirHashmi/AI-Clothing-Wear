@@ -1,6 +1,6 @@
 import { TryOnEngine, type EngineStats, type Facing, type GuidanceCode, type OutfitSpec } from '@tryon/engine';
-import catalogJson from './catalog.json';
 import { STRINGS, type Lang, type Strings } from './i18n.ts';
+import { isTryOnMessage, type HostMessage, type WidgetMessage } from './protocol.ts';
 import './styles.css';
 
 interface CatalogItem extends OutfitSpec {
@@ -9,7 +9,6 @@ interface CatalogItem extends OutfitSpec {
   price: number;
   swatch: string;
 }
-const catalog = catalogJson as unknown as CatalogItem[];
 
 const params = new URLSearchParams(location.search);
 const $ = <T extends Element = HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
@@ -20,15 +19,63 @@ const statsEl = $('.stats');
 const startSheet = $('[data-screen="start"]');
 const resultSheet = $('[data-screen="result"]');
 const errorEl = $('.start .error');
+const startBtn = $<HTMLButtonElement>('[data-action="start"]');
+
+/** Embedded in a store page via tryon.js (see loader.ts). */
+const embed = params.get('embed') === '1';
+const hostOrigin = (() => {
+  try {
+    return embed ? new URL(params.get('host') ?? '').origin : null;
+  } catch {
+    return null;
+  }
+})();
+const cartEnabled = embed && params.get('cart') === '1';
+const store = (params.get('store') ?? 'demo').replace(/[^a-z0-9-]/gi, '');
+const SIZES: Record<string, string> = { '0.94': 'S', '1': 'M', '1.06': 'L', '1.12': 'XL' };
 
 let lang: Lang = params.get('lang') === 'ur' ? 'ur' : 'en';
 let t: Strings = STRINGS[lang];
+let catalog: CatalogItem[] = [];
+let current: CatalogItem | null = null;
 let engine: TryOnEngine | null = null;
-let current = catalog.find((c) => c.id === params.get('outfit')) ?? catalog[0];
+let enginePromise: Promise<TryOnEngine> | null = null;
 let guidance: GuidanceCode = 'starting';
 let timerSec = 0;
+let size = 'M';
 let lastShot: Blob | null = null;
 let busyShooting = false;
+let cartRequest = 0;
+
+// ------------------------------------------------------------------------------------------
+// Host messaging
+
+function postToHost(msg: WidgetMessage): void {
+  if (hostOrigin && window.parent !== window) window.parent.postMessage(msg, hostOrigin);
+}
+
+window.addEventListener('message', (ev: MessageEvent) => {
+  if (!hostOrigin || ev.origin !== hostOrigin || ev.source !== window.parent) return;
+  if (!isTryOnMessage<HostMessage>(ev.data)) return;
+  if (ev.data.type === 'cart-result' && ev.data.id === cartRequest) {
+    toast(ev.data.ok ? `✓ ${t.added}` : t.addFailed);
+    document.querySelectorAll<HTMLButtonElement>('[data-action="cart"]').forEach((b) => (b.disabled = false));
+  }
+});
+
+function closeWidget(): void {
+  engine?.stopCamera();
+  postToHost({ source: 'tryon', type: 'close' });
+}
+
+let toastTimer = 0;
+function toast(msg: string): void {
+  const el = $('.toast');
+  el.textContent = msg;
+  el.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => (el.hidden = true), 3000);
+}
 
 // ------------------------------------------------------------------------------------------
 // Language
@@ -54,15 +101,36 @@ function applyLang(): void {
   $('[data-action="lang"]').textContent = lang === 'en' ? 'اردو' : 'English';
   $('[data-action="flip"]').setAttribute('aria-label', t.flip);
   $('[data-action="stats"]').setAttribute('aria-label', t.stats);
+  document.querySelectorAll('[data-action="close"]').forEach((b) => b.setAttribute('aria-label', t.close));
   $('.preview-note').textContent = t.preview;
   renderProducts();
+  renderCartButtons();
   showGuidance(guidance);
 }
 
 // ------------------------------------------------------------------------------------------
-// Products
+// Catalog
 
 const formatPrice = (pkr: number) => `Rs ${pkr.toLocaleString('en-PK')}`;
+
+async function loadCatalog(): Promise<void> {
+  try {
+    const res = await fetch(`catalog/${store}.json`);
+    if (!res.ok) throw new Error(String(res.status));
+    catalog = (await res.json()) as CatalogItem[];
+  } catch {
+    catalog = [];
+  }
+  const wanted = params.get('product') ?? params.get('outfit');
+  current = catalog.find((c) => c.id === wanted) ?? (embed && wanted ? null : catalog[0] ?? null);
+  if (!current) {
+    errorEl.textContent = t.catalogError;
+    errorEl.hidden = false;
+    startBtn.disabled = true;
+  }
+  renderProducts();
+  renderCartButtons();
+}
 
 function renderProducts(): void {
   const list = $('.products');
@@ -71,8 +139,9 @@ function renderProducts(): void {
     const b = document.createElement('button');
     b.className = 'product';
     b.setAttribute('role', 'option');
-    b.setAttribute('aria-selected', String(item.id === current.id));
-    b.innerHTML = `<span class="sw" style="background:${item.swatch}"></span><span><span class="nm"></span><span class="pr"></span></span>`;
+    b.setAttribute('aria-selected', String(item.id === current?.id));
+    b.innerHTML = `<span class="sw"></span><span><span class="nm"></span><span class="pr"></span></span>`;
+    (b.querySelector('.sw') as HTMLElement).style.background = item.swatch;
     b.querySelector('.nm')!.textContent = item.name[lang];
     b.querySelector('.pr')!.textContent = formatPrice(item.price);
     b.onclick = () => selectOutfit(item);
@@ -80,12 +149,23 @@ function renderProducts(): void {
   }
 }
 
+function renderCartButtons(): void {
+  document.querySelectorAll<HTMLButtonElement>('[data-action="cart"]').forEach((b) => {
+    b.hidden = !cartEnabled || !current;
+    if (current) b.innerHTML = `${t.addToCart} <small>· ${size} · ${formatPrice(current.price)}</small>`;
+  });
+}
+
 async function selectOutfit(item: CatalogItem): Promise<void> {
   current = item;
   renderProducts();
-  const url = new URL(location.href);
-  url.searchParams.set('outfit', item.id);
-  history.replaceState(null, '', url);
+  renderCartButtons();
+  if (!embed) {
+    const url = new URL(location.href);
+    url.searchParams.set('outfit', item.id);
+    history.replaceState(null, '', url);
+  }
+  postToHost({ source: 'tryon', type: 'event', name: 'outfit-changed', product: item.id });
   await engine?.setOutfit(item);
 }
 
@@ -113,7 +193,7 @@ function showStats(s: EngineStats): void {
 }
 
 // ------------------------------------------------------------------------------------------
-// Start / camera
+// Engine + camera
 
 function isInAppBrowser(): boolean {
   return /FBAN|FBAV|Instagram|TikTok|Snapchat|Line\//i.test(navigator.userAgent);
@@ -129,8 +209,25 @@ function errorMessage(err: unknown): string {
   return `${t.errors.generic} (${msg})`;
 }
 
+/** Start loading the tracking model right away, while the shopper reads the privacy note. */
+function loadEngine(): Promise<TryOnEngine> {
+  enginePromise ??= TryOnEngine.create({
+    canvas,
+    assetBase: `${import.meta.env.BASE_URL}mediapipe/`,
+    model: params.get('model') === 'full' ? 'full' : 'lite',
+    worker: params.get('worker') !== '0',
+  }).then((e) => {
+    e.onGuidance = (g) => showGuidance(g.code);
+    e.onStats = showStats;
+    (window as unknown as { __tryon: TryOnEngine }).__tryon = e;
+    engine = e;
+    return e;
+  });
+  return enginePromise;
+}
+
 async function start(): Promise<void> {
-  const startBtn = $<HTMLButtonElement>('[data-action="start"]');
+  if (!current) return;
   errorEl.hidden = true;
   if (isInAppBrowser()) {
     errorEl.textContent = t.errors.inapp;
@@ -139,21 +236,13 @@ async function start(): Promise<void> {
   startBtn.disabled = true;
   $('.start .loading').hidden = false;
   try {
-    if (!engine) {
-      engine = await TryOnEngine.create({
-        canvas,
-        assetBase: `${import.meta.env.BASE_URL}mediapipe/`,
-        model: params.get('model') === 'full' ? 'full' : 'lite',
-        worker: params.get('worker') !== '0',
-      });
-      engine.onGuidance = (g) => showGuidance(g.code);
-      engine.onStats = showStats;
-      (window as unknown as { __tryon: TryOnEngine }).__tryon = engine;
-    }
-    await Promise.all([engine.startCamera(params.get('camera') === 'back' ? 'environment' : 'user'), engine.setOutfit(current)]);
+    const e = await loadEngine();
+    await Promise.all([e.startCamera(params.get('camera') === 'back' ? 'environment' : 'user'), e.setOutfit(current)]);
     startSheet.hidden = true;
+    postToHost({ source: 'tryon', type: 'event', name: 'camera-started', product: current.id });
   } catch (err) {
     console.error(err);
+    enginePromise = engine ? enginePromise : null; // allow a retry if loading failed
     errorEl.textContent = errorMessage(err);
     errorEl.hidden = false;
   } finally {
@@ -173,10 +262,10 @@ async function flipCamera(): Promise<void> {
 }
 
 // ------------------------------------------------------------------------------------------
-// Snapshot + share
+// Snapshot + share + cart
 
 async function shoot(): Promise<void> {
-  if (!engine || busyShooting) return;
+  if (!engine || busyShooting || !current) return;
   busyShooting = true;
   const cd = $('.countdown');
   for (let s = timerSec; s > 0; s--) {
@@ -195,19 +284,21 @@ async function shoot(): Promise<void> {
   if (img.src) URL.revokeObjectURL(img.src);
   img.src = URL.createObjectURL(lastShot);
   resultSheet.hidden = false;
+  postToHost({ source: 'tryon', type: 'event', name: 'snapshot', product: current.id });
 }
 
 function shotFile(): File | null {
-  return lastShot ? new File([lastShot], `tryon-${current.id}.jpg`, { type: 'image/jpeg' }) : null;
+  return lastShot && current ? new File([lastShot], `tryon-${current.id}.jpg`, { type: 'image/jpeg' }) : null;
 }
 
 async function share(): Promise<void> {
   const file = shotFile();
-  if (!file) return;
+  if (!file || !current) return;
   const data: ShareData = { files: [file], title: current.name[lang], text: `${t.shareText} ${current.name[lang]}` };
   if (navigator.canShare?.(data)) {
     try {
       await navigator.share(data);
+      postToHost({ source: 'tryon', type: 'event', name: 'share', product: current.id });
       return;
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return;
@@ -226,6 +317,13 @@ function download(): void {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
+function addToCart(): void {
+  if (!current || !cartEnabled) return;
+  cartRequest++;
+  document.querySelectorAll<HTMLButtonElement>('[data-action="cart"]').forEach((b) => (b.disabled = true));
+  postToHost({ source: 'tryon', type: 'add-to-cart', id: cartRequest, detail: { product: current.id, size } });
+}
+
 // ------------------------------------------------------------------------------------------
 // Wiring
 
@@ -240,7 +338,9 @@ document.addEventListener('click', (e) => {
   if (group === 'size') {
     setPressed('size', target);
     const k = Number(target.dataset.value);
+    size = SIZES[target.dataset.value!] ?? 'M';
     engine?.setFit({ width: k, length: 1 + (k - 1) * 0.35 });
+    renderCartButtons();
     return;
   }
   if (group === 'timer') {
@@ -251,6 +351,9 @@ document.addEventListener('click', (e) => {
   switch (target.dataset.action) {
     case 'start':
       void start();
+      break;
+    case 'close':
+      closeWidget();
       break;
     case 'lang':
       lang = lang === 'en' ? 'ur' : 'en';
@@ -271,10 +374,17 @@ document.addEventListener('click', (e) => {
     case 'download':
       download();
       break;
+    case 'cart':
+      addToCart();
+      break;
     case 'close-result':
       resultSheet.hidden = true;
       break;
   }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && embed) closeWidget();
 });
 
 document.addEventListener('visibilitychange', () => {
@@ -284,6 +394,16 @@ document.addEventListener('visibilitychange', () => {
   else if (startSheet.hidden) void engine.startCamera(engine.cameraFacing);
 });
 
-statsEl.hidden = params.get('stats') === '0';
+// Cache the model and runtime for instant repeat visits (production builds only).
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  navigator.serviceWorker.register('./sw.js').catch((err) => console.warn('[tryon] service worker:', err));
+}
+
+document.querySelectorAll<HTMLElement>('[data-action="close"]').forEach((b) => (b.hidden = !embed));
+statsEl.hidden = params.get('stats') !== '1' && (embed || params.get('stats') === '0');
 applyLang();
-if (params.get('autostart') === '1') void start();
+void loadCatalog().then(() => {
+  if (current) void loadEngine().catch(() => {}); // errors are reported when the shopper taps Start
+  if (params.get('autostart') === '1') void start();
+});
+postToHost({ source: 'tryon', type: 'ready' });

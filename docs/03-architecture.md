@@ -106,7 +106,11 @@ Key techniques:
 
 ### Data and caching
 - **Measured (Phase 1 build):** WebAssembly runtime 11.8 MB raw / **3.4 MB gzip**; Lite model **5.8 MB** (already compressed, doesn't shrink further); app code **16 KB** gzip + worker ~44 KB gzip. **First visit ≈ 8.5 MB**, just over the 8 MB budget (N-07). Next steps: Brotli on the CDN, service-worker caching (Phase 2), then test a lighter model if real 4G load times miss N-06.
-- All runtime and model files are self-hosted (`scripts/fetch-assets.mjs`), never loaded from a third-party CDN at runtime.
+- All runtime and model files are self-hosted (`scripts/fetch-assets.mjs`) in versioned folders (`mediapipe/1.0.1/`), never loaded from a third-party CDN at runtime.
+- **Measured (Phase 2, production build):** first visit 8.4 MB gzip; **repeat visit 21 KB** thanks to the service worker (`public/sw.js`: model, runtime, garments and hashed code cache-first; pages and catalogs network-first).
+
+### Embedding (Phase 2)
+Store page → `tryon.js` (2.7 KB loader) → full-screen **iframe** on the try-on host (`allow="camera"` for that origin only) → widget. The two talk through `postMessage` with origin checks on both sides (`apps/widget/src/protocol.ts`): `close`, `add-to-cart` → `cart-result`, analytics `event`s. The store page never gets camera access. Details: `docs/integration.md`.
 - Garment images are WebP, ≤ 1024 px, ≤ 150 KB, preloaded for the current product only.
 
 ## 3.4 Photo Mode (realistic AI image)
@@ -115,20 +119,24 @@ Key techniques:
 3. The widget polls for the result or receives it over a server-sent event (target: under 20 s) and shows share and download buttons.
 4. Each generation is metered against the store's plan.
 
-## 3.5 Garment pipeline (dashboard upload)
-upload → background removal → classify slot/type → predict garment joints → shopper-style preview on sample videos → manual correction → publish (WebP + rig JSON to the CDN).
+## 3.5 Garment pipeline
+**Phase 2 (built): Garment Studio**, an in-browser tool, all on-device:
+photo → *model photo:* MediaPipe multiclass segmentation keeps only the clothes (removes face, hair, skin, background) + pose detection places the joints automatically; *flat-lay:* background removed by colour flood-fill → guided-filter edge refinement → gap filling (morphological closing + push-pull inpainting) → split a suit into top/bottom along a line → preview on photo or webcam → WebP + catalog JSON.
+
+**Phase 3 (planned):** the same steps run behind the dashboard upload, with one-click publish to the CDN.
 
 Phase 2 uses heuristics plus manual rig editing. Automatic joint prediction with a small trained keypoint model comes later, once there are a few hundred manually rigged garments to train it on.
 
 ## 3.6 Repository layout
 ```
-/packages/engine        Try-On Engine (TS library)
-/apps/widget            Embeddable widget (Vite) – uses engine
-/apps/dashboard         Store dashboard (Next.js)
-/services/api           FastAPI service
-/services/pipeline      garment processing + Photo Mode workers
-/integrations/shopify   Shopify app
-/integrations/woocommerce  WordPress plugin
-/docs                   these documents
+/packages/engine           Try-On Engine (TS library)                         [built]
+/apps/widget               Embeddable widget + tryon.js loader + demo store   [built]
+/apps/studio               Garment Studio (internal garment preparation tool) [built]
+/integrations/shopify      Shopify theme snippet (app in Phase 6)            [built]
+/integrations/woocommerce  WordPress plugin                                   [built]
+/apps/dashboard            Store dashboard (Next.js)                          [Phase 3]
+/services/api              FastAPI service                                    [Phase 3]
+/services/pipeline         garment processing + Photo Mode workers            [Phase 3/5]
+/docs                      these documents
 ```
 Monorepo with npm workspaces (JS) and a separate Python project under `/services`.

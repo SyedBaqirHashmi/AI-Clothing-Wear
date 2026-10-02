@@ -70,3 +70,23 @@ describe('SkinnedMesh', () => {
     expect(bottom[3].x).toBeLessThan(hem.x - 100);
   });
 });
+
+describe('SkinnedMesh with arms close to the body (model photo)', () => {
+  it('still lets the sleeve follow a raised arm', () => {
+    const photo = mannequin();
+    const pj = photo.joints;
+    // Arms hanging nearly straight down, close to the torso.
+    pj['R.elbow'] = { x: pj['R.shoulder'].x - 15, y: pj['R.shoulder'].y + 290 };
+    pj['R.wrist'] = { x: pj['R.elbow'].x - 5, y: pj['R.elbow'].y + 255 };
+    const sleevePx = { x: (pj['R.shoulder'].x + pj['R.elbow'].x) / 2, y: (pj['R.shoulder'].y + pj['R.elbow'].y) / 2 };
+    const mesh = new SkinnedMesh(pj, TOP_BONES, new Float32Array([sleevePx.x, sleevePx.y]));
+    const s = structuredClone(photo);
+    const sh = s.joints['R.shoulder'];
+    s.joints['R.elbow'] = { x: sh.x - 290, y: sh.y };
+    s.joints['R.wrist'] = { x: sh.x - 545, y: sh.y };
+    const out = new Float32Array(2);
+    mesh.apply(s, out);
+    expect(out[1]).toBeLessThan(sh.y + 40); // lifted to shoulder height
+    expect(out[0]).toBeLessThan(sh.x - 100);
+  });
+});

@@ -1,5 +1,5 @@
 {
-  "name": "@tryon/demo",
+  "name": "@tryon/widget",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -8,13 +8,14 @@
     "predev": "npm run assets",
     "dev": "vite --host",
     "prebuild": "npm run assets",
-    "build": "vite build",
+    "build": "vite build && vite build -c vite.loader.config.ts",
     "preview": "vite preview --host"
   },
   "dependencies": {
     "@tryon/engine": "0.1.0"
   },
   "devDependencies": {
-    "@vitejs/plugin-basic-ssl": "^1.2.0"
+    "@vitejs/plugin-basic-ssl": "^1.2.0",
+    "esbuild": "^0.21.5"
   }
 }

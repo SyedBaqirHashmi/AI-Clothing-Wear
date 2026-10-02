@@ -17,12 +17,20 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
-      - name: Build (fetches the self-hosted tracking model)
+      - name: Lint WooCommerce plugin
+        run: php -l integrations/woocommerce/tryon-for-woocommerce/tryon-for-woocommerce.php
+      - name: Build widget + studio (fetches the self-hosted models)
         run: npm run build
-      - name: End-to-end test with a fake camera
-        run: |
-          npx -y playwright@1.56.0 install --with-deps chromium
-          npm run e2e
+      - name: Install Chromium for end-to-end tests
+        run: npx -y playwright@1.56.0 install --with-deps chromium
+      - name: Widget + embedded store flow (fake camera)
+        run: npm run e2e
+      - name: Garment Studio pipeline
+        run: npm run e2e:studio
+      - name: Shopify / WooCommerce cart hand-off
+        run: npm run e2e:integrations
+      - name: Download budgets (production build)
+        run: npm run e2e:caching
       - uses: actions/upload-artifact@v4
         if: always()
         with:

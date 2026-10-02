@@ -1,21 +1,34 @@
 /**
  * Self-host the tracking runtime and models (never depend on a third-party CDN at runtime).
- *   node scripts/fetch-assets.mjs <dest-dir>
- * Copies MediaPipe's wasm files from node_modules and downloads the pose models once.
+ *
+ *   node scripts/fetch-assets.mjs <dest-dir> [--segmenter]
+ *
+ * Files go to <dest-dir>/<mediapipe-version>/{wasm,models}/ so URLs change when MediaPipe is
+ * upgraded; that lets browsers and the service worker cache them forever.
+ * --segmenter also downloads the clothes-segmentation model used by the Garment Studio.
  */
-import { copyFileSync, existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 
-const dest = resolve(process.argv[2] ?? 'public/mediapipe');
+const args = process.argv.slice(2);
+const withSegmenter = args.includes('--segmenter');
+const destRoot = resolve(args.find((a) => !a.startsWith('--')) ?? 'public/mediapipe');
 const require = createRequire(import.meta.url);
 const pkgDir = dirname(require.resolve('@mediapipe/tasks-vision', { paths: [process.cwd()] }));
+const version = JSON.parse(readFileSync(join(pkgDir, 'package.json'), 'utf8')).version;
+const dest = join(destRoot, version);
 
+const POSE = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker';
 const MODELS = {
-  'pose_landmarker_lite.task':
-    'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task',
-  'pose_landmarker_full.task':
-    'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task',
+  'pose_landmarker_lite.task': `${POSE}/pose_landmarker_lite/float16/1/pose_landmarker_lite.task`,
+  'pose_landmarker_full.task': `${POSE}/pose_landmarker_full/float16/1/pose_landmarker_full.task`,
+  ...(withSegmenter
+    ? {
+        'selfie_multiclass_256x256.tflite':
+          'https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/1/selfie_multiclass_256x256.tflite',
+      }
+    : {}),
 };
 
 mkdirSync(join(dest, 'wasm'), { recursive: true });
@@ -34,4 +47,4 @@ for (const [name, url] of Object.entries(MODELS)) {
   writeFileSync(dst, Buffer.from(await res.arrayBuffer()));
   console.log('done');
 }
-console.log(`MediaPipe assets ready in ${dest}`);
+console.log(`MediaPipe ${version} assets ready in ${dest}`);

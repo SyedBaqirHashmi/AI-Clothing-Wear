@@ -14,8 +14,8 @@ import { mannequin, resolveAnchor, type JointName } from '../packages/engine/src
 import type { Coverage, GarmentLayerSpec, Slot, Vec2 } from '../packages/engine/src/types.ts';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const outDir = join(root, 'apps/demo/public/garments');
-const catalogPath = join(root, 'apps/demo/src/catalog.json');
+const outDir = join(root, 'apps/widget/public/garments');
+const catalogPath = join(root, 'apps/widget/public/catalog/demo.json');
 const S = mannequin();
 const SW = S.scale;
 const at = (e: string): Vec2 => resolveAnchor(e, S);

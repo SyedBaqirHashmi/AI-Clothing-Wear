@@ -50,9 +50,9 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round
 .product { flex: 0 0 auto; width: 148px; scroll-snap-align: start; display: flex; gap: 10px; align-items: center; text-align: start; background: var(--panel); border: 1.5px solid var(--line); border-radius: var(--radius); padding: 8px; min-height: 64px; }
 .product[aria-selected='true'] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
 .product .sw { flex: 0 0 36px; height: 48px; border-radius: 8px; border: 1px solid var(--line); }
-.product .nm { font-size: 13px; line-height: 1.25; font-weight: 600; }
+.product .nm { display: block; font-size: 13px; line-height: 1.25; font-weight: 600; }
 [dir='rtl'] .product .nm { font-size: 12px; line-height: 1.7; }
-.product .pr { font-size: 12px; color: var(--accent); margin-top: 2px; direction: ltr; unicode-bidi: isolate; }
+.product .pr { display: block; font-size: 12px; color: var(--accent); margin-top: 2px; direction: ltr; unicode-bidi: isolate; }
 
 .controls { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; padding: 4px 16px 0; }
 .group { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
@@ -91,4 +91,15 @@ h1 { margin: 0; font-size: 26px; }
   .controls { max-width: 860px; margin: 0 auto; }
   .sheet { place-items: center; }
   .sheet-body { border-radius: 22px; border-bottom: 1px solid var(--line); }
+}
+
+.toast { position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); background: var(--text); color: #111; border-radius: 999px; padding: 10px 18px; font-weight: 600; font-size: 15px; max-width: calc(100% - 32px); text-align: center; }
+.cart { display: block; width: calc(100% - 32px); max-width: 520px; margin: 10px auto 0; }
+.cart small { font-weight: 500; opacity: 0.8; direction: ltr; unicode-bidi: isolate; }
+.row-single .cart { width: 100%; margin-top: 8px; }
+.start .sheet-body { position: relative; }
+.sheet-close { position: absolute; top: 14px; inset-inline-end: 14px; }
+@media (max-width: 420px) {
+  .seg button { min-width: 30px; padding: 0 6px; font-size: 12px; }
+  .shutter { width: 64px; height: 64px; }
 }
