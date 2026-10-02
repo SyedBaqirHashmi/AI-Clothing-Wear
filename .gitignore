@@ -3,5 +3,11 @@ dist/
 apps/widget/public/mediapipe/
 test-results/
 *.y4m
-datasets/
+# Real product photos stay out of git (copyright); only the guide is tracked.
+datasets/*
+!datasets/README.md
+# Garments and catalogs imported from datasets/ (demo garments stay tracked).
+apps/widget/public/garments/*/
+apps/widget/public/catalog/*.json
+!apps/widget/public/catalog/demo.json
 apps/studio/public/mediapipe/

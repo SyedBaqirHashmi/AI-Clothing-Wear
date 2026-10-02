@@ -62,7 +62,7 @@ Object.assign(
   checks,
   await page.evaluate(() => {
     const s = window.__studio.state;
-    const a = s.alpha;
+    const a = s.cutout.alpha;
     let sum = 0;
     for (let i = 0; i < a.length; i++) sum += a[i];
     const j = s.joints;

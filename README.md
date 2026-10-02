@@ -16,6 +16,8 @@ npm run e2e:studio   # Garment Studio pipeline on a real photo
 npm run e2e:integrations  # Shopify / WooCommerce cart hand-off
 npm run build && npm run e2e:caching   # download budgets on the production build
 npm run garments     # regenerate the sample garments + demo catalog
+npm run import       # real product photos in datasets/ → try-on garments + review report
+npm run build:site   # widget + demo store + studio, ready to host (Cloudflare Pages)
 ```
 The first `dev`/`build` downloads the MediaPipe runtime and pose models into `apps/widget/public/mediapipe/` (self-hosted, git-ignored).
 
@@ -23,7 +25,8 @@ The first `dev`/`build` downloads the MediaPipe runtime and pose models into `ap
 ```
 packages/engine/     Try-on engine (TypeScript): camera, pose worker, body model, skinning, WebGL renderer
 apps/widget/         Shopper widget + tryon.js loader + demo store page; 5 sample outfits, EN/UR
-apps/studio/         Garment Studio: product photo → try-on garment (AI cut-out, joints, export)
+apps/studio/         Garment Studio: product photo → try-on garment (AI cut-out, joints, export) + batch import
+datasets/            Your real product photos (git-ignored; see datasets/README.md)
 integrations/        Shopify snippet, WooCommerce plugin
 scripts/             Garment generator, asset fetcher
 tests/e2e/           End-to-end test (Playwright + fake camera)
@@ -40,6 +43,7 @@ docs/                Product plan, requirements, architecture, roadmap, process,
 | [5. Process](docs/05-process.md) | Git workflow, Definition of Done, CI, real-device QA lab |
 | [6. Decisions & Risks](docs/06-decisions-and-risks.md) | Open decisions, ADRs, risk register |
 | [7. Target Brands](docs/07-target-brands.md) | Target brands, their platforms, what data we use and how |
+| [**Testing guide**](docs/testing-guide.md) | Phone tests, real clothes, real stores; what's needed for production |
 | [Integration guide](docs/integration.md) | Embedding on any site, Shopify, WooCommerce; catalog format |
 | [Garment guidelines](docs/garment-guidelines.md) | Which product photos work; Garment Studio workflow |
 | [Phase 1 QA](docs/qa/phase1.md) | What was built, test results, phone test checklist |

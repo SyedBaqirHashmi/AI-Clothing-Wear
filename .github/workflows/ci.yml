@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, claude/virtual-clothing-try-on-v2wftm]
 
 jobs:
   check:

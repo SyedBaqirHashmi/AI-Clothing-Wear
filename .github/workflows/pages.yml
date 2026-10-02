@@ -1,11 +1,13 @@
 # Publishes the widget, demo store (/demo-store.html) and Garment Studio (/studio/) to
 # GitHub Pages (https), so they can be opened on any phone.
 # One-time setup: repository Settings → Pages → Source: "GitHub Actions".
+# Note: free GitHub Pages needs a public repository; for a private one use Cloudflare Pages
+# (docs/testing-guide.md).
 name: Deploy demo
 
 on:
   push:
-    branches: [main]
+    branches: [main, claude/virtual-clothing-try-on-v2wftm]
   workflow_dispatch:
 
 permissions:
@@ -30,9 +32,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run build
-      - name: Studio under /studio/
-        run: cp -r apps/studio/dist apps/widget/dist/studio
+      - run: npm run build:site
       - uses: actions/upload-pages-artifact@v3
         with:
           path: apps/widget/dist

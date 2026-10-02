@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="data:," />
+    <title>Batch import · Garment Studio</title>
+    <style>
+      body { margin: 0; padding: 20px; font: 14px system-ui, sans-serif; background: #121214; color: #f1efe9; color-scheme: dark; }
+      button { font: inherit; padding: 10px 16px; border-radius: 8px; border: 0; background: #d9b25a; color: #1b1406; font-weight: 700; cursor: pointer; }
+      #log { white-space: pre-wrap; font: 12px ui-monospace, monospace; color: #9d9a92; margin-top: 12px; }
+    </style>
+  </head>
+  <body>
+    <h1>Batch import</h1>
+    <p>Processes every product in <code>datasets/&lt;store&gt;/&lt;product&gt;/</code> and writes the garments and catalog into the widget. Dev server only.</p>
+    <button id="run">Import all</button>
+    <div id="log"></div>
+    <script type="module" src="./src/batch.ts"></script>
+  </body>
+</html>

@@ -1,4 +1,5 @@
 import { TryOnEngine, type EngineStats, type Facing, type GuidanceCode, type OutfitSpec } from '@tryon/engine';
+import { buildReport, copyReport, recordStats } from './field-report.ts';
 import { STRINGS, type Lang, type Strings } from './i18n.ts';
 import { isTryOnMessage, type HostMessage, type WidgetMessage } from './protocol.ts';
 import './styles.css';
@@ -16,6 +17,7 @@ const stage = $('.stage');
 const canvas = $<HTMLCanvasElement>('#view');
 const guidanceEl = $('.guidance');
 const statsEl = $('.stats');
+const statsBox = $('.stats-box');
 const startSheet = $('[data-screen="start"]');
 const resultSheet = $('[data-screen="result"]');
 const errorEl = $('.start .error');
@@ -182,7 +184,8 @@ function showGuidance(code: GuidanceCode): void {
 
 function showStats(s: EngineStats): void {
   (window as unknown as { __tryonStats: EngineStats }).__tryonStats = s;
-  if (statsEl.hidden) return;
+  recordStats(s);
+  if (statsBox.hidden) return;
   statsEl.textContent = [
     `video   ${s.videoWidth}×${s.videoHeight}`,
     `render  ${s.renderFps} fps`,
@@ -360,7 +363,12 @@ document.addEventListener('click', (e) => {
       applyLang();
       break;
     case 'stats':
-      statsEl.hidden = !statsEl.hidden;
+      statsBox.hidden = !statsBox.hidden;
+      break;
+    case 'report':
+      void copyReport(
+        buildReport({ model: params.get('model') ?? 'lite', camera: engine?.cameraFacing ?? '-', outfit: current?.id ?? '-', mode: embed ? 'embedded' : 'standalone' }),
+      ).then((ok) => ok && toast('Report copied. Paste it in the chat.'));
       break;
     case 'flip':
       void flipCamera();
@@ -400,7 +408,7 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
 }
 
 document.querySelectorAll<HTMLElement>('[data-action="close"]').forEach((b) => (b.hidden = !embed));
-statsEl.hidden = params.get('stats') !== '1' && (embed || params.get('stats') === '0');
+statsBox.hidden = params.get('stats') !== '1' && (embed || params.get('stats') === '0');
 applyLang();
 void loadCatalog().then(() => {
   if (current) void loadEngine().catch(() => {}); // errors are reported when the shopper taps Start

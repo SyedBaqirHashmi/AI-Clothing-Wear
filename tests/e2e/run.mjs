@@ -123,6 +123,17 @@ for (const run of runs) {
     note = `no tracking: ${String(err).split('\n')[0]}`;
   }
   const guidance = await page.evaluate(() => document.querySelector('.guidance')?.textContent ?? '');
+  if (run.name === 'firozi-lawn-3pc' && stats) {
+    // Field-test report button copies a readable report.
+    await page.context().grantPermissions(['clipboard-read', 'clipboard-write'], { origin: BASE.slice(0, -1) });
+    await page.click('[data-action="report"]');
+    await page.waitForTimeout(300);
+    const report = await page.evaluate(() => navigator.clipboard.readText());
+    if (!/render\s+avg [\d.]+/.test(report) || !report.includes('gpu')) {
+      errors.push('field report missing data');
+    }
+    writeFileSync(join(out, 'field-report.txt'), report);
+  }
   await page.screenshot({ path: join(out, `${run.name}.png`) });
   const ok = !!stats && stats.videoWidth === 1280 && stats.videoHeight === 720 && errors.length === 0;
   if (!ok) failed = true;

@@ -38,7 +38,9 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round
 .icon svg { width: 22px; height: 22px; }
 
 .guidance { position: absolute; top: calc(max(12px, env(safe-area-inset-top)) + 60px); left: 50%; transform: translateX(-50%); background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 10px 18px; font-size: 16px; font-weight: 600; white-space: nowrap; max-width: calc(100% - 32px); overflow: hidden; text-overflow: ellipsis; backdrop-filter: blur(8px); }
-.stats { position: absolute; top: calc(max(12px, env(safe-area-inset-top)) + 110px); left: 16px; margin: 0; background: rgba(0, 0, 0, 0.6); padding: 8px 10px; border-radius: 10px; font: 12px/1.5 ui-monospace, Menlo, monospace; direction: ltr; }
+.stats-box { position: absolute; top: calc(max(12px, env(safe-area-inset-top)) + 110px); left: 16px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.stats-box .chip { min-height: 36px; font-size: 13px; }
+.stats { margin: 0; background: rgba(0, 0, 0, 0.6); padding: 8px 10px; border-radius: 10px; font: 12px/1.5 ui-monospace, Menlo, monospace; direction: ltr; }
 .countdown { position: absolute; font-size: 120px; font-weight: 800; text-shadow: 0 4px 24px rgba(0, 0, 0, 0.6); }
 .flash { position: absolute; inset: 0; background: #fff; animation: flash 0.35s ease-out forwards; pointer-events: none; }
 @keyframes flash { from { opacity: 0.85; } to { opacity: 0; } }

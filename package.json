@@ -18,7 +18,9 @@
     "studio": "npm run dev -w apps/studio",
     "e2e:studio": "node tests/e2e/studio.mjs",
     "e2e:integrations": "node tests/e2e/integrations.mjs",
-    "e2e:caching": "node tests/e2e/caching.mjs"
+    "e2e:caching": "node tests/e2e/caching.mjs",
+    "import": "node scripts/import-garments.mjs",
+    "build:site": "npm run build && rm -rf apps/widget/dist/studio && cp -r apps/studio/dist apps/widget/dist/studio"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",
